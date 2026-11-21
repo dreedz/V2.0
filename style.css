@@ -25,6 +25,10 @@ body {
     align-items: center;
     height: 100vh;
     user-select: none;
+    /* Empêche les tablettes de grossir le texte automatiquement quand on dézoome */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    touch-action: manipulation;
 }
 
 #game-container {
@@ -200,7 +204,41 @@ body {
 }
 
 .hud-left   { justify-self: start; }
-.hud-center { justify-self: center; min-width: 280px; text-align: center; }
+.hud-center-wrap {
+    justify-self: center;
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+}
+.hud-center { min-width: 280px; text-align: center; }
+
+/* ⏸ Bouton pause */
+.pause-btn {
+    pointer-events: auto; /* le HUD ignore les clics, sauf ce bouton */
+    width: 52px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: var(--cyan);
+    background: linear-gradient(180deg, var(--panel-bg), rgba(8, 14, 30, 0.45));
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    box-shadow: 0 0 18px rgba(56, 189, 248, 0.12), inset 0 0 20px rgba(56, 189, 248, 0.06);
+    backdrop-filter: blur(5px);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: box-shadow 0.15s, color 0.15s, transform 0.1s;
+}
+.pause-btn:hover  { color: #ffffff; box-shadow: 0 0 22px rgba(34, 211, 238, 0.45); }
+.pause-btn:active { transform: scale(0.94); }
+.pause-btn svg { filter: drop-shadow(0 0 6px var(--cyan)); }
+.pause-btn .icon-play { display: none; }
+body.is-paused .pause-btn .icon-pause { display: none; }
+body.is-paused .pause-btn .icon-play  { display: block; }
+/* Le bouton pause n'apparaît que pendant une partie */
+body:not(.is-playing) .pause-btn { visibility: hidden; }
 .hud-center::before { left: 50%; transform: translateX(-50%); }
 .hud-right  { justify-self: end; text-align: right; }
 .hud-right::before { left: auto; right: 18px; }
@@ -296,21 +334,60 @@ body {
 /* ==========================================
    🛑 MENU D'ACCUEIL / GAME OVER
    ========================================== */
-#game-over-screen {
+/* Écrans superposés (menu principal, game over, pause) */
+.overlay {
     position: absolute;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
     background: radial-gradient(circle at 50% 45%, rgba(3, 7, 18, 0.45), rgba(3, 7, 18, 0.85));
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 100;
+    overflow-y: auto; /* si l'écran est très petit, on peut faire défiler le menu */
 }
 
-#game-over-screen.hidden {
+.overlay.hidden {
     display: none !important;
+}
+
+#pause-screen {
+    background: rgba(3, 7, 18, 0.6);
+    backdrop-filter: blur(3px);
+}
+.pause-card { max-width: 420px; }
+.pause-stats {
+    margin-bottom: 22px;
+    font-family: var(--font-ui);
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+}
+.pause-stats span { color: #ffffff; font-weight: 900; }
+
+/* Compte à rebours 3-2-1 */
+#countdown {
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 120;
+    pointer-events: none;
+    font-family: var(--font-ui);
+    font-size: clamp(70px, 16vw, 140px);
+    font-weight: 900;
+    color: #ffffff;
+    text-shadow: 0 0 30px var(--cyan), 0 0 60px var(--purple);
+    opacity: 0;
+}
+#countdown.show { animation: count-pop 0.6s ease-out forwards; }
+@keyframes count-pop {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(2); }
+    25%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    80%  { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
 }
 
 .menu-card {
@@ -420,8 +497,38 @@ h1 {
 .dot.gold   { background: #fde047; box-shadow: 0 0 8px var(--gold); }
 .dot.purple { background: #c084fc; box-shadow: 0 0 8px var(--purple); }
 
+/* Groupe de boutons des menus */
+.menu-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Bouton secondaire (contour lumineux) */
+.secondary-btn {
+    padding: 13px 22px;
+    font-family: var(--font-ui);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--cyan);
+    background: rgba(34, 211, 238, 0.06);
+    border: 1px solid rgba(34, 211, 238, 0.55);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.12s, background 0.12s, box-shadow 0.12s;
+}
+.secondary-btn:hover {
+    background: rgba(34, 211, 238, 0.14);
+    box-shadow: 0 0 16px rgba(34, 211, 238, 0.35);
+    transform: translateY(-2px);
+}
+.secondary-btn:active { transform: translateY(1px); }
+
 /* Bouton principal */
-#restart-btn {
+.primary-btn {
     position: relative;
     padding: 15px 48px;
     font-family: var(--font-ui);
@@ -437,10 +544,10 @@ h1 {
     animation: btn-glow 2s ease-in-out infinite;
     transition: transform 0.12s;
 }
-#restart-btn:hover {
+.primary-btn:hover {
     transform: translateY(-2px) scale(1.04);
 }
-#restart-btn:active {
+.primary-btn:active {
     transform: translateY(1px) scale(0.98);
 }
 @keyframes btn-glow {
@@ -648,11 +755,158 @@ h1 {
     animation: shake 0.2s ease-in-out;
 }
 
-/* 📱 Petits écrans */
+/* ==========================================
+   📱 MODE MOBILE (clavier virtuel)
+   ========================================== */
+/* La page devient une colonne : zone de jeu en haut, clavier en bas */
+body.mobile-mode {
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    height: 100vh;
+    height: 100dvh; /* hauteur réelle visible sur mobile (sans la barre d'adresse) */
+}
+body.mobile-mode #game-container {
+    width: 100%;
+    height: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+/* Sur mobile, les boutons son sont cachés pendant l'action (ils restent dans les menus et la pause) */
+body.mobile-mode.is-playing:not(.is-paused) #sound-controls { display: none; }
+
+/* Le rappel "touche Entrée / Échap" ne sert à rien sur téléphone */
+body.mobile-mode .desktop-only { display: none; }
+
+#virtual-keyboard { display: none; }
+body.mobile-mode #virtual-keyboard {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 4px calc(10px + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, rgba(8, 14, 30, 0.97), #02040a);
+    border-top: 1px solid var(--panel-border);
+    box-shadow: 0 -6px 24px rgba(34, 211, 238, 0.12);
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: none; /* pas de zoom ni de défilement en tapant vite */
+    transition: opacity 0.2s;
+}
+body.mobile-mode.is-paused #virtual-keyboard {
+    opacity: 0.35;
+    pointer-events: none;
+}
+
+.vk-row {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+}
+
+.vk-key {
+    flex: 0 0 calc((100% - 45px) / 10); /* 10 touches par ligne, même largeur partout */
+    max-width: 64px;
+    height: clamp(42px, 6.8vh, 58px);
+    padding: 0;
+    font-family: var(--font-ui);
+    font-size: clamp(15px, 4.6vw, 22px);
+    font-weight: 700;
+    color: #e2e8f0;
+    background: linear-gradient(180deg, #1e293b, #0f172a);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    border-bottom-width: 3px;
+    border-radius: 8px;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.12s, box-shadow 0.12s;
+}
+.vk-key.pressed {
+    transform: translateY(2px);
+    border-bottom-width: 1px;
+}
+.vk-key.ok {
+    color: #ffffff;
+    background: linear-gradient(180deg, rgba(34, 211, 238, 0.55), rgba(14, 116, 144, 0.6));
+    box-shadow: 0 0 14px var(--cyan);
+}
+.vk-key.ko {
+    color: #ffffff;
+    background: linear-gradient(180deg, rgba(244, 63, 94, 0.55), rgba(136, 19, 55, 0.6));
+    box-shadow: 0 0 14px var(--pink);
+}
+
+/* 🔄 Message "tourne ton téléphone" (mode mobile, téléphone à l'horizontale) */
+#rotate-hint { display: none; }
+@media (orientation: landscape) and (max-height: 500px) {
+    body.mobile-mode #rotate-hint {
+        position: fixed;
+        inset: 0;
+        z-index: 300;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        background: rgba(2, 4, 10, 0.94);
+        font-family: var(--font-ui);
+        font-size: 18px;
+        letter-spacing: 2px;
+        color: #e2e8f0;
+    }
+    .rotate-icon {
+        font-size: 54px;
+        animation: rotate-phone 1.6s ease-in-out infinite;
+    }
+}
+@keyframes rotate-phone {
+    0%, 30%  { transform: rotate(-90deg); }
+    60%, 100% { transform: rotate(0deg); }
+}
+
+/* ==========================================
+   📱 PETITS ÉCRANS (téléphones)
+   ========================================== */
 @media (max-width: 720px) {
-    .hud-panel { min-width: 0; padding: 8px 10px; }
-    .hud-center { min-width: 0; }
-    .hud-value { font-size: 20px; }
-    .how-to { grid-template-columns: 1fr; }
-    .menu-card { padding: 28px 18px 20px; }
+    /* HUD compact sur une seule ligne */
+    #hud { top: 8px; left: 8px; right: 8px; gap: 6px; }
+    .hud-panel { min-width: 0; padding: 6px 9px 8px; border-radius: 8px; }
+    .hud-panel::before { width: 22px; left: 9px; }
+    .hud-right::before { right: 9px; }
+    .hud-center-wrap { gap: 6px; }
+    .hud-center { min-width: 0; width: 112px; }
+    .hud-label { font-size: 9px; letter-spacing: 2px; }
+    .hud-value { font-size: 18px; }
+    .hud-level { font-size: 14px; margin-left: 3px; }
+    .hud-sub { display: none; }
+    .progress { margin-top: 6px; height: 6px; }
+    .pause-btn { width: 40px; border-radius: 8px; }
+
+    /* Jeu plus compact */
+    .word-container { font-size: 21px; letter-spacing: 2px; }
+    #player-ship { width: 52px; height: 65px; bottom: 8px; }
+    #shield-line { bottom: 56px; }
+    .float-text { font-size: 18px; }
+    .float-text.type-bonus { font-size: 24px; }
+    .float-text.combo-up { font-size: 17px; }
+    #level-banner { letter-spacing: 4px; }
+
+    /* Boutons son plus petits */
+    #sound-controls { right: 8px; bottom: 8px; gap: 6px; }
+    .sound-btn { padding: 6px 8px; font-size: 9px; letter-spacing: 1px; }
+
+    /* Menus */
+    .how-to { grid-template-columns: 1fr; gap: 6px; margin-bottom: 18px; }
+    .how-item { padding: 8px 10px; font-size: 13px; }
+    .menu-card { padding: 26px 16px 18px; }
+    .menu-buttons { flex-direction: column; align-items: stretch; }
+    .primary-btn { padding: 14px 20px; }
+    .stat-value { font-size: 22px; }
+}
+
+/* Téléphone très bas (petits modèles) : on réduit encore le clavier */
+@media (max-height: 640px) {
+    .vk-key { height: 40px; }
+    body.mobile-mode #virtual-keyboard { gap: 4px; padding-top: 6px; }
 }

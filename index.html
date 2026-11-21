@@ -3,6 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        // 📱 TABLETTES / PETITS ÉCRANS : on "dézoome" pour voir le jeu comme sur un PC.
+        // Le navigateur affiche la page comme si l'écran faisait LARGEUR_PAYSAGE (ou PORTRAIT)
+        // pixels de large, puis réduit tout pour que ça tienne. Sans effet sur ordinateur.
+        // 👉 Augmente ces valeurs pour voir encore plus loin, baisse-les pour zoomer.
+        (function () {
+            var LARGEUR_PAYSAGE = 1500;
+            var LARGEUR_PORTRAIT = 1000;
+            var meta = document.querySelector('meta[name="viewport"]');
+
+            function ajusterVue() {
+                var paysage = window.matchMedia('(orientation: landscape)').matches;
+                var largeurEcran = paysage
+                    ? Math.max(screen.width, screen.height)
+                    : Math.min(screen.width, screen.height);
+                var cible = paysage ? LARGEUR_PAYSAGE : LARGEUR_PORTRAIT;
+                // Téléphone (petit côté < 600 px) : on garde la taille normale,
+                // l'affichage est optimisé en CSS pour le mode mobile avec clavier virtuel.
+                var estTelephone = Math.min(screen.width, screen.height) < 600;
+
+                if (estTelephone) {
+                    meta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover');
+                } else if (largeurEcran < cible) {
+                    meta.setAttribute('content', 'width=' + cible + ', user-scalable=no');
+                } else {
+                    meta.setAttribute('content', 'width=device-width, initial-scale=1.0');
+                }
+            }
+
+            ajusterVue();
+            window.addEventListener('orientationchange', function () { setTimeout(ajusterVue, 150); });
+        })();
+    </script>
     <title>Paul's SPACE Shooter - Édition Ultime</title>
     <!-- Polices futuristes (si pas d'internet, le jeu utilise une police de secours) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,10 +59,23 @@
                 <div class="hud-sub">RECORD <span id="high-score">0</span></div>
             </div>
 
-            <div class="hud-panel hud-center">
-                <div class="hud-label">NIVEAU <span id="level" class="hud-level">1</span></div>
-                <div class="progress"><div class="progress-fill" id="level-progress"></div></div>
-                <div class="hud-sub">MOTS <span id="streak">0/7</span></div>
+            <div class="hud-center-wrap">
+                <div class="hud-panel hud-center">
+                    <div class="hud-label">NIVEAU <span id="level" class="hud-level">1</span></div>
+                    <div class="progress"><div class="progress-fill" id="level-progress"></div></div>
+                    <div class="hud-sub">MOTS <span id="streak">0/7</span></div>
+                </div>
+
+                <!-- ⏸ BOUTON PAUSE -->
+                <button id="pause-btn" class="pause-btn" title="Pause (Échap)" aria-label="Pause">
+                    <svg class="icon-pause" viewBox="0 0 24 24" width="22" height="22">
+                        <rect x="5" y="4" width="5" height="16" rx="1.5" fill="currentColor"/>
+                        <rect x="14" y="4" width="5" height="16" rx="1.5" fill="currentColor"/>
+                    </svg>
+                    <svg class="icon-play" viewBox="0 0 24 24" width="22" height="22">
+                        <path d="M 7 4 L 20 12 L 7 20 Z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                    </svg>
+                </button>
             </div>
 
             <div class="hud-panel hud-right">
@@ -45,8 +91,25 @@
         <!-- Ligne du bouclier : si un mot la touche, c'est perdu -->
         <div id="shield-line"></div>
 
+        <!-- Compte à rebours à la reprise après une pause -->
+        <div id="countdown"></div>
+
+        <!-- ⏸ ÉCRAN DE PAUSE -->
+        <div id="pause-screen" class="overlay hidden">
+            <div class="menu-card pause-card">
+                <div class="menu-badge">◆ MISSION SUSPENDUE ◆</div>
+                <h1>PAUSE</h1>
+                <div class="pause-stats">SCORE <span id="pause-score">0</span> · NIVEAU <span id="pause-level">1</span></div>
+                <div class="menu-buttons">
+                    <button id="resume-btn" class="primary-btn">REPRENDRE</button>
+                    <button id="quit-btn" class="secondary-btn">MENU PRINCIPAL</button>
+                </div>
+                <p class="menu-hint desktop-only"><span class="keycap">Échap</span> ou <span class="keycap">Entrée</span> pour reprendre</p>
+            </div>
+        </div>
+
         <!-- Écran d'accueil et de Game Over -->
-        <div id="game-over-screen">
+        <div id="game-over-screen" class="overlay">
             <div class="menu-card">
                 <div class="menu-badge">◆ DÉFENSE SPATIALE ◆</div>
                 <h1 id="screen-title">PAUL TYPING SHOOTER</h1>
@@ -59,8 +122,11 @@
                     <div class="how-item"><span class="dot purple"></span> Sans erreur : combo jusqu'à x4</div>
                 </div>
 
-                <button id="restart-btn">COMMENCER</button>
-                <p class="menu-hint">ou appuie sur <span class="keycap">Entrée</span></p>
+                <div class="menu-buttons">
+                    <button id="restart-btn" class="primary-btn">COMMENCER</button>
+                    <button id="mode-btn" class="secondary-btn">📱 MODE MOBILE</button>
+                </div>
+                <p class="menu-hint" id="menu-hint">Mode clavier · ou appuie sur <span class="keycap">Entrée</span></p>
 
                 <!-- ✍️ VOTRE CRÉDIT -->
                 <p id="game-credits">Créé par <span>Julien.L</span></p>
@@ -137,6 +203,15 @@
             </svg>
         </div>
 
+    </div>
+
+    <!-- ⌨️ CLAVIER VIRTUEL (mode mobile) : les touches sont créées par script.js -->
+    <div id="virtual-keyboard" aria-label="Clavier virtuel"></div>
+
+    <!-- 🔄 Message si le téléphone est tenu à l'horizontale en mode mobile -->
+    <div id="rotate-hint">
+        <div class="rotate-icon">📱</div>
+        <p>Tourne ton téléphone<br>en mode <b>portrait</b></p>
     </div>
 
     <!-- Liaison avec votre fichier JavaScript -->

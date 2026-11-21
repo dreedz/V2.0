@@ -15,6 +15,22 @@ const restartBtn = document.getElementById('restart-btn');
 const levelProgressElement = document.getElementById('level-progress');
 const comboProgressElement = document.getElementById('combo-progress');
 const levelBanner = document.getElementById('level-banner');
+const shieldLine = document.getElementById('shield-line');
+const pauseBtn = document.getElementById('pause-btn');
+const pauseScreen = document.getElementById('pause-screen');
+const resumeBtn = document.getElementById('resume-btn');
+const quitBtn = document.getElementById('quit-btn');
+const pauseScoreElement = document.getElementById('pause-score');
+const pauseLevelElement = document.getElementById('pause-level');
+const countdownElement = document.getElementById('countdown');
+const modeBtn = document.getElementById('mode-btn');
+const menuHint = document.getElementById('menu-hint');
+const howTo = document.getElementById('how-to');
+const virtualKeyboard = document.getElementById('virtual-keyboard');
+
+// Contenu d'origine du menu (pour y revenir depuis la pause)
+const initialTitle = screenTitle ? screenTitle.innerHTML : '';
+const initialStats = screenStats ? screenStats.innerHTML : '';
 
 const wordList = [
     "RAT", "COQ", "RENARD", "FOURMI", "CHEVAL", "CHIEN", "GIRAFE", "REQUIN", "SOURIS", "OISEAU",
@@ -48,17 +64,53 @@ let level = 1;
 let wordsDestroyedInLevel = 0;
 let highScore = parseInt(localStorage.getItem('typing_shooter_highscore'), 10) || 0;
 let isPlaying = false;
-let currentCombo = 0;          
-let scoreMultiplier = 1;       
+let currentCombo = 0;
+let scoreMultiplier = 1;
+let isPaused = false;
+let isCountingDown = false;
+let countdownTimer = null;
+
+// 🎮 Mode de jeu : 'clavier' (PC) ou 'mobile' (clavier virtuel à l'écran)
+// Sur un appareil tactile sans souris, on propose le mode mobile par défaut.
+const isTouchDevice = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+let gameMode = isTouchDevice ? 'mobile' : 'clavier';
+const MOBILE_SPEED_FACTOR = 0.75; // en mode mobile les mots tombent 25 % moins vite
+
+// Dimensions de la zone de jeu (plus petite que l'écran en mode mobile, à cause du clavier)
+const gameW = () => (container ? container.clientWidth : window.innerWidth);
+const gameH = () => (container ? container.clientHeight : window.innerHeight);
 
 if (highScoreElement) highScoreElement.innerText = highScore;
-if (restartBtn) restartBtn.addEventListener('click', startGame);
+if (restartBtn) restartBtn.addEventListener('click', () => { restartBtn.blur(); startGame(gameMode); });
+if (modeBtn) modeBtn.addEventListener('click', () => {
+    modeBtn.blur();
+    startGame(gameMode === 'mobile' ? 'clavier' : 'mobile');
+});
 
-// Touche Entrée pour lancer / relancer une partie depuis le menu
+// Met à jour les boutons du menu selon le mode choisi
+function updateMenuButtons() {
+    if (modeBtn) modeBtn.innerText = gameMode === 'mobile' ? '⌨ MODE CLAVIER' : '📱 MODE MOBILE';
+    if (menuHint) {
+        menuHint.innerHTML = gameMode === 'mobile'
+            ? 'Mode mobile · clavier affiché à l\'écran'
+            : 'Mode clavier · ou appuie sur <span class="keycap">Entrée</span>';
+    }
+}
+updateMenuButtons();
+
+// Touches spéciales : Entrée (lancer / reprendre) et Échap (pause)
 window.addEventListener('keydown', (e) => {
-    if (!isPlaying && e.key === 'Enter') {
-        e.preventDefault(); // évite un double lancement si le bouton a le focus
-        startGame();
+    if (e.key === 'Enter') {
+        if (!isPlaying) {
+            e.preventDefault(); // évite un double lancement si un bouton a le focus
+            startGame(gameMode);
+        } else if (isPaused) {
+            e.preventDefault();
+            resumeGame();
+        }
+    } else if (e.key === 'Escape' && isPlaying) {
+        e.preventDefault();
+        if (isPaused) resumeGame(); else pauseGame();
     }
 });
 
@@ -516,15 +568,50 @@ function createExplosion(x, y, color = '#f43f5e') {
 // ==========================================
 // 4. ÉTATS DU JEU & LOGIQUE DES BONUS
 // ==========================================
-function startGame() {
-    isPlaying = true;
-    currentCombo = 0;
-    scoreMultiplier = 1;
-    startMusic();
-
+// Retire tous les mots et lasers de l'écran
+function clearField() {
     activeWords.forEach(w => { if (w.element && container && container.contains(w.element)) container.removeChild(w.element); });
     lasers.forEach(l => { if (l.element && container && container.contains(l.element)) container.removeChild(l.element); });
+    activeWords = [];
+    lasers = [];
+    targetedWord = null;
+}
 
+// Applique (ou retire) la mise en page du mode mobile
+function applyLayout(mobile) {
+    document.body.classList.toggle('mobile-mode', mobile);
+    refreshBackgroundSize(); // le fond s'adapte à la nouvelle taille de la zone de jeu
+}
+
+// Enregistre le record si besoin. Renvoie true si c'est un nouveau record.
+function saveHighScore() {
+    if (score <= highScore) return false;
+    highScore = score;
+    try { localStorage.setItem('typing_shooter_highscore', highScore); } catch (e) { /* stockage indisponible */ }
+    if (highScoreElement) highScoreElement.innerText = highScore;
+    return true;
+}
+
+function startGame(mode) {
+    if (mode === 'clavier' || mode === 'mobile') gameMode = mode;
+    updateMenuButtons();
+    applyLayout(gameMode === 'mobile');
+
+    clearTimeout(countdownTimer);
+    isCountingDown = false;
+    isPaused = false;
+    isPlaying = true;
+    document.body.classList.add('is-playing');
+    document.body.classList.remove('is-paused');
+    if (pauseScreen) pauseScreen.classList.add('hidden');
+
+    currentCombo = 0;
+    scoreMultiplier = 1;
+    initAudio();
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    startMusic();
+
+    clearField();
     activeWords = [];
     lasers = [];
     targetedWord = null;
@@ -560,16 +647,15 @@ function startGame() {
 
 function triggerGameOver() {
     isPlaying = false;
+    isPaused = false;
     clearInterval(gameInterval);
+    gameInterval = null;
+    document.body.classList.remove('is-playing', 'is-paused');
+    applyLayout(false); // le menu reprend tout l'écran
     stopMusic();
     playGameOverSound();
-    
-    const newRecord = score > highScore;
-    if (newRecord) {
-        highScore = score;
-        localStorage.setItem('typing_shooter_highscore', highScore);
-        if (highScoreElement) highScoreElement.innerText = highScore;
-    }
+
+    const newRecord = saveHighScore();
 
     if (screenTitle) screenTitle.innerText = "GAME OVER";
     if (screenStats) screenStats.innerHTML = `
@@ -588,7 +674,7 @@ function triggerGameOver() {
 
 function triggerBonusBomb(bonusWord) {
     triggerScreenShake();
-    createExplosion(window.innerWidth / 2, window.innerHeight / 2, '#eab308');
+    createExplosion(gameW() / 2, gameH() / 2, '#eab308');
 
     activeWords.forEach(w => {
         if (w === bonusWord) return; // le mot bonus est déjà compté par updateGame
@@ -630,7 +716,7 @@ function spawnWord() {
     
     const element = document.createElement('div');
     element.className = 'word-container';
-    const posX = Math.random() * (window.innerWidth * 0.7) + (window.innerWidth * 0.15);
+    let posX = Math.random() * (gameW() * 0.7) + (gameW() * 0.15);
     element.style.left = posX + 'px';
     element.style.top = '0px';
     
@@ -654,10 +740,18 @@ function spawnWord() {
     }
     element.innerHTML = htmlContent;
     if (container) container.appendChild(element);
-    
+
+    // On s'assure que le mot ne dépasse pas sur les bords (important sur téléphone)
+    const half = element.offsetWidth / 2;
+    const margin = 8;
+    posX = half * 2 + margin * 2 > gameW()
+        ? gameW() / 2
+        : Math.min(Math.max(posX, half + margin), gameW() - half - margin);
+    element.style.left = posX + 'px';
+
     activeWords.push({
         text: text, element: element, posX: posX, posY: 0, typedIndex: 0, validatedIndex: 0, type: wordType,
-        hits: new Array(text.length).fill(false)
+        hits: new Array(text.length).fill(false), height: element.offsetHeight
     });
 }
 
@@ -692,12 +786,16 @@ function updateGame() {
     spawnTimer++;
     if (spawnTimer >= settings.spawnDelay) { spawnWord(); spawnTimer = 0; }
 
+    // Limite du bouclier : c'est perdu quand le bas d'un mot touche la ligne
+    const shieldTop = shieldLine ? shieldLine.offsetTop : gameH() - 80;
+    const speedFactor = gameMode === 'mobile' ? MOBILE_SPEED_FACTOR : 1;
+
     for (let i = activeWords.length - 1; i >= 0; i--) {
         let w = activeWords[i];
-        const currentSpeed = w.type === 'RAPIDE' ? settings.wordSpeed * 2 : settings.wordSpeed;
+        const currentSpeed = (w.type === 'RAPIDE' ? settings.wordSpeed * 2 : settings.wordSpeed) * speedFactor;
         w.posY += currentSpeed;
         if (w.element) w.element.style.top = w.posY + 'px';
-        if (w.posY > window.innerHeight - 110) { triggerGameOver(); return; }
+        if (w.posY + w.height > shieldTop) { triggerGameOver(); return; }
     }
 
     for (let i = lasers.length - 1; i >= 0; i--) {
@@ -771,7 +869,7 @@ function updateGame() {
                 }
             }
         }
-        if (l.y < 0 || l.x < 0 || l.x > window.innerWidth) {
+        if (l.y < 0 || l.x < 0 || l.x > gameW()) {
             if (l.element && container && container.contains(l.element)) container.removeChild(l.element);
             lasers.splice(i, 1);
         }
@@ -793,10 +891,17 @@ function refreshTargetableHelpers() {
 // ==========================================
 // 6. ÉVÉNEMENTS CLAVIER (CIBLAGE SANS CONFLIT DE LETTRES)
 // ==========================================
+// Clavier physique
 window.addEventListener('keydown', (e) => {
-    if (!isPlaying || e.key.length !== 1) return;
-    const keyPressed = e.key.toUpperCase(); if (!playerShip) return;
-    const shipRect = playerShip.getBoundingClientRect(); 
+    if (!isPlaying || isPaused || e.key.length !== 1) return;
+    handleLetter(e.key.toUpperCase());
+});
+
+// Traite une lettre tapée (clavier physique OU clavier virtuel).
+// Renvoie true si la lettre était correcte.
+function handleLetter(keyPressed) {
+    if (!isPlaying || isPaused || !playerShip) return false;
+    const shipRect = playerShip.getBoundingClientRect();
     const shipX = shipRect.left + shipRect.width / 2; 
     const shipY = shipRect.top + shipRect.height / 2;
     let toucheCorrecte = false;
@@ -900,7 +1005,160 @@ window.addEventListener('keydown', (e) => {
         if (displayElement) { displayElement.innerText = "x1"; displayElement.style.color = "#64748b"; }
     }
     updateHudBars();
+    return toucheCorrecte;
+}
+
+// ==========================================
+// 6 BIS. PAUSE
+// ==========================================
+function pauseGame() {
+    if (!isPlaying || isPaused) return;
+    isPaused = true;
+    clearInterval(gameInterval);
+    gameInterval = null;
+    if (audioCtx && audioCtx.state === 'running') audioCtx.suspend(); // fige musique et sons
+    document.body.classList.add('is-paused');
+    if (pauseScoreElement) pauseScoreElement.innerText = score;
+    if (pauseLevelElement) pauseLevelElement.innerText = level;
+    if (pauseScreen) pauseScreen.classList.remove('hidden');
+}
+
+// Reprise avec un compte à rebours 3, 2, 1 pour avoir le temps de se replacer
+function resumeGame() {
+    if (!isPlaying || !isPaused || isCountingDown) return;
+    if (pauseScreen) pauseScreen.classList.add('hidden');
+    isCountingDown = true;
+    let n = 3;
+
+    const tick = () => {
+        if (!isPlaying || !isCountingDown) return;
+        if (n === 0) {
+            if (countdownElement) countdownElement.classList.remove('show');
+            isCountingDown = false;
+            isPaused = false;
+            document.body.classList.remove('is-paused');
+            if (audioCtx) audioCtx.resume();
+            gameInterval = setInterval(updateGame, 1000 / 60);
+            return;
+        }
+        if (countdownElement) {
+            countdownElement.innerText = n;
+            countdownElement.classList.remove('show');
+            void countdownElement.offsetWidth; // relance l'animation
+            countdownElement.classList.add('show');
+        }
+        n--;
+        countdownTimer = setTimeout(tick, 600);
+    };
+    tick();
+}
+
+// Annule un compte à rebours en cours et réaffiche l'écran de pause
+function cancelCountdown() {
+    if (!isCountingDown) return;
+    clearTimeout(countdownTimer);
+    isCountingDown = false;
+    if (countdownElement) countdownElement.classList.remove('show');
+    if (pauseScreen) pauseScreen.classList.remove('hidden');
+}
+
+// Abandonne la partie et revient au menu principal
+function quitToMenu() {
+    clearTimeout(countdownTimer);
+    isCountingDown = false;
+    isPlaying = false;
+    isPaused = false;
+    clearInterval(gameInterval);
+    gameInterval = null;
+    saveHighScore();
+    clearField();
+
+    document.body.classList.remove('is-playing', 'is-paused');
+    if (pauseScreen) pauseScreen.classList.add('hidden');
+    applyLayout(false);
+
+    if (audioCtx) audioCtx.resume().then(() => stopMusic()).catch(() => {});
+
+    if (screenTitle) screenTitle.innerHTML = initialTitle;
+    if (screenStats) screenStats.innerHTML = initialStats;
+    if (restartBtn) restartBtn.innerText = 'COMMENCER';
+    if (gameOverScreen) {
+        gameOverScreen.classList.remove('is-game-over');
+        gameOverScreen.classList.remove('hidden');
+    }
+    updateMenuButtons();
+}
+
+if (pauseBtn) pauseBtn.addEventListener('click', () => {
+    pauseBtn.blur();
+    if (isCountingDown) return;
+    if (isPaused) resumeGame(); else pauseGame();
 });
+if (resumeBtn) resumeBtn.addEventListener('click', () => { resumeBtn.blur(); resumeGame(); });
+if (quitBtn) quitBtn.addEventListener('click', () => { quitBtn.blur(); quitToMenu(); });
+
+// Pause automatique si on quitte l'onglet / l'application (appel, notification...)
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) return;
+    if (isCountingDown) cancelCountdown();
+    else pauseGame();
+});
+
+// ==========================================
+// 6 TER. CLAVIER VIRTUEL (MODE MOBILE)
+// ==========================================
+const KEYBOARD_ROWS = ['AZERTYUIOP', 'QSDFGHJKLM', 'WXCVBN']; // disposition AZERTY
+
+function buildVirtualKeyboard() {
+    if (!virtualKeyboard) return;
+    virtualKeyboard.innerHTML = '';
+    KEYBOARD_ROWS.forEach(row => {
+        const rowEl = document.createElement('div');
+        rowEl.className = 'vk-row';
+        for (const letter of row) {
+            const key = document.createElement('button');
+            key.className = 'vk-key';
+            key.type = 'button';
+            key.dataset.key = letter;
+            key.innerText = letter;
+            rowEl.appendChild(key);
+        }
+        virtualKeyboard.appendChild(rowEl);
+    });
+}
+
+function flashKey(key, className) {
+    key.classList.remove('ok', 'ko');
+    key.classList.add('pressed', className);
+    clearTimeout(key._timer);
+    key._timer = setTimeout(() => key.classList.remove('pressed', 'ok', 'ko'), 130);
+}
+
+if (virtualKeyboard) {
+    buildVirtualKeyboard();
+    // "pointerdown" réagit dès que le doigt touche l'écran (plus rapide qu'un clic)
+    virtualKeyboard.addEventListener('pointerdown', (e) => {
+        const key = e.target.closest('.vk-key');
+        if (!key) return;
+        e.preventDefault();
+        if (!isPlaying || isPaused) return;
+        const correct = handleLetter(key.dataset.key);
+        flashKey(key, correct ? 'ok' : 'ko');
+        if (navigator.vibrate) navigator.vibrate(correct ? 8 : 30); // petite vibration (Android)
+    });
+    // Empêche le menu "copier / sélectionner" lors d'un appui long
+    virtualKeyboard.addEventListener('contextmenu', (e) => e.preventDefault());
+}
+
+// Téléphone tourné à l'horizontale en mode mobile : on met en pause automatiquement
+const landscapePhoneQuery = window.matchMedia('(orientation: landscape) and (max-height: 500px)');
+function checkOrientation() {
+    if (gameMode === 'mobile' && isPlaying && landscapePhoneQuery.matches) {
+        if (isCountingDown) cancelCountdown();
+        else pauseGame();
+    }
+}
+window.addEventListener('resize', checkOrientation);
 
 // ==========================================
 // 7. FOND SPATIAL ANIMÉ (ÉTOILES, PLANÈTES, ASTÉROÏDES)
@@ -921,8 +1179,8 @@ function hexToRgba(hex, alpha) {
 
 function resizeBackground() {
     const dpr = window.devicePixelRatio || 1;
-    bgW = window.innerWidth;
-    bgH = window.innerHeight;
+    bgW = gameW();
+    bgH = gameH();
     bgCanvas.width = bgW * dpr;
     bgCanvas.height = bgH * dpr;
     bgCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1116,7 +1374,7 @@ function drawBackground(now) {
     const dt = Math.min((now - bgLastTime) / 16.67, 3); // indépendant des FPS
     bgLastTime = now;
 
-    const targetWarp = isPlaying ? 1 + (level - 1) * 0.12 : 0.5;
+    const targetWarp = isPaused ? 0.15 : isPlaying ? 1 + (level - 1) * 0.12 : 0.5;
     warpSpeed += (targetWarp - warpSpeed) * 0.02 * dt;
 
     bgCtx.clearRect(0, 0, bgW, bgH);
@@ -1184,11 +1442,21 @@ function drawBackground(now) {
     requestAnimationFrame(drawBackground);
 }
 
+// Recalcule le fond quand la zone de jeu change de taille (rotation, mode mobile...)
+function refreshBackgroundSize() {
+    if (!bgCanvas || !bgCtx) return;
+    const w = gameW(), h = gameH();
+    if (w === bgW && h === bgH) return;
+    resizeBackground();
+    createStars();
+    createPlanets();
+}
+
 if (bgCanvas && bgCtx) {
     resizeBackground();
     createStars();
     createPlanets();
     createAsteroids();
-    window.addEventListener('resize', () => { resizeBackground(); createStars(); });
+    window.addEventListener('resize', refreshBackgroundSize);
     requestAnimationFrame(drawBackground);
 }
