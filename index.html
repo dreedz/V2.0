@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paul's SPACE Shooter - Édition Ultime</title>
+    <!-- Polices futuristes (si pas d'internet, le jeu utilise une police de secours) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- ZONE DE JEU PRINCIPALE -->
+    <div id="game-container">
+
+        <!-- 🌌 FOND SPATIAL ANIMÉ (étoiles, planètes, astéroïdes) -->
+        <canvas id="space-bg"></canvas>
+
+        <!-- 📊 HUD : 3 panneaux (Score / Niveau / Combo) -->
+        <div id="hud">
+            <div class="hud-panel hud-left">
+                <div class="hud-label">SCORE</div>
+                <div class="hud-value" id="score">0</div>
+                <div class="hud-sub">RECORD <span id="high-score">0</span></div>
+            </div>
+
+            <div class="hud-panel hud-center">
+                <div class="hud-label">NIVEAU <span id="level" class="hud-level">1</span></div>
+                <div class="progress"><div class="progress-fill" id="level-progress"></div></div>
+                <div class="hud-sub">MOTS <span id="streak">0/7</span></div>
+            </div>
+
+            <div class="hud-panel hud-right">
+                <div class="hud-label">COMBO</div>
+                <div class="hud-value" id="combo-multiplier" style="color: #22d3ee;">x1</div>
+                <div class="progress small"><div class="progress-fill combo" id="combo-progress"></div></div>
+            </div>
+        </div>
+
+        <!-- Bannière qui apparaît au passage de niveau -->
+        <div id="level-banner"></div>
+
+        <!-- Ligne du bouclier : si un mot la touche, c'est perdu -->
+        <div id="shield-line"></div>
+
+        <!-- Écran d'accueil et de Game Over -->
+        <div id="game-over-screen">
+            <div class="menu-card">
+                <div class="menu-badge">◆ DÉFENSE SPATIALE ◆</div>
+                <h1 id="screen-title">PAUL TYPING SHOOTER</h1>
+                <div id="screen-stats" class="stats-summary">Détruis les mots avant qu'ils n'atteignent ton bouclier !</div>
+
+                <div id="how-to" class="how-to">
+                    <div class="how-item"><span class="keycap">A</span><span class="keycap">Z</span> Tape les lettres pour tirer</div>
+                    <div class="how-item"><span class="dot red"></span> Mots rouges : rapides, +20 pts</div>
+                    <div class="how-item"><span class="dot gold"></span> Mots dorés : bombe qui détruit tout</div>
+                    <div class="how-item"><span class="dot purple"></span> Sans erreur : combo jusqu'à x4</div>
+                </div>
+
+                <button id="restart-btn">COMMENCER</button>
+                <p class="menu-hint">ou appuie sur <span class="keycap">Entrée</span></p>
+
+                <!-- ✍️ VOTRE CRÉDIT -->
+                <p id="game-credits">Créé par <span>Julien.L</span></p>
+            </div>
+        </div>
+
+        <!-- 🎚️ BOUTONS SON (cliquables à tout moment) -->
+        <div id="sound-controls">
+            <button id="music-btn" class="sound-btn" title="Couper / remettre la musique">♪ MUSIQUE</button>
+            <button id="sfx-btn" class="sound-btn" title="Couper / remettre les effets sonores">✦ EFFETS</button>
+        </div>
+
+        <!-- 🚀 LE VAISSEAU DU JOUEUR -->
+        <div id="player-ship">
+            <svg viewBox="0 0 80 100" width="100%" height="100%">
+                <defs>
+                    <linearGradient id="hullGrad" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0" stop-color="#0c4a6e"/>
+                        <stop offset="0.45" stop-color="#7dd3fc"/>
+                        <stop offset="0.55" stop-color="#e0f2fe"/>
+                        <stop offset="1" stop-color="#0369a1"/>
+                    </linearGradient>
+                    <linearGradient id="wingGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" stop-color="#38bdf8"/>
+                        <stop offset="1" stop-color="#0c4a6e"/>
+                    </linearGradient>
+                    <radialGradient id="cockpitGrad" cx="0.4" cy="0.35" r="0.7">
+                        <stop offset="0" stop-color="#ecfeff"/>
+                        <stop offset="0.35" stop-color="#22d3ee"/>
+                        <stop offset="1" stop-color="#083344"/>
+                    </radialGradient>
+                    <linearGradient id="flameGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" stop-color="#ffffff"/>
+                        <stop offset="0.25" stop-color="#67e8f9"/>
+                        <stop offset="0.6" stop-color="#a855f7" stop-opacity="0.8"/>
+                        <stop offset="1" stop-color="#a855f7" stop-opacity="0"/>
+                    </linearGradient>
+                </defs>
+
+                <!-- Flammes des réacteurs (animées en CSS) -->
+                <path class="flame" d="M 29 78 Q 32.5 100 36 78 Z" fill="url(#flameGrad)"/>
+                <path class="flame flame-2" d="M 44 78 Q 47.5 100 51 78 Z" fill="url(#flameGrad)"/>
+
+                <!-- Ailes principales -->
+                <path d="M 40 30 L 73 66 L 74 78 L 54 72 L 40 75 L 26 72 L 6 78 L 7 66 Z"
+                      fill="url(#wingGrad)" stroke="#7dd3fc" stroke-width="1.2" stroke-linejoin="round"/>
+                <!-- Détails des ailes -->
+                <path d="M 18 66 L 30 56 M 62 66 L 50 56" stroke="#bae6fd" stroke-width="1" opacity="0.5"/>
+                <path d="M 12 72 L 24 68 M 68 72 L 56 68" stroke="#f43f5e" stroke-width="2" stroke-linecap="round"/>
+
+                <!-- Canons en bout d'ailes -->
+                <rect x="4.5" y="50" width="4" height="22" rx="1.5" fill="#334155" stroke="#94a3b8" stroke-width="0.8"/>
+                <rect x="71.5" y="50" width="4" height="22" rx="1.5" fill="#334155" stroke="#94a3b8" stroke-width="0.8"/>
+                <rect x="5.5" y="47" width="2" height="4" fill="#f43f5e"/>
+                <rect x="72.5" y="47" width="2" height="4" fill="#f43f5e"/>
+
+                <!-- Fuselage central -->
+                <path d="M 40 2 C 46 16 50 34 50 56 L 48 77 L 32 77 L 30 56 C 30 34 34 16 40 2 Z"
+                      fill="url(#hullGrad)" stroke="#bae6fd" stroke-width="1.2"/>
+                <path d="M 40 10 L 40 72" stroke="#ffffff" stroke-width="0.8" opacity="0.35"/>
+                <path d="M 33 60 L 47 60 M 32.5 66 L 47.5 66" stroke="#0c4a6e" stroke-width="1" opacity="0.6"/>
+
+                <!-- Tuyères des réacteurs -->
+                <rect x="28.5" y="74" width="8" height="6" rx="1.5" fill="#1e293b" stroke="#64748b" stroke-width="0.8"/>
+                <rect x="43.5" y="74" width="8" height="6" rx="1.5" fill="#1e293b" stroke="#64748b" stroke-width="0.8"/>
+
+                <!-- Cockpit -->
+                <ellipse cx="40" cy="34" rx="5.5" ry="12" fill="url(#cockpitGrad)" stroke="#0e7490" stroke-width="1"/>
+                <ellipse cx="38.3" cy="29" rx="1.6" ry="4" fill="#ffffff" opacity="0.7"/>
+
+                <!-- Feux de navigation clignotants -->
+                <circle class="nav-light" cx="8" cy="78" r="1.8" fill="#f43f5e"/>
+                <circle class="nav-light" cx="72" cy="78" r="1.8" fill="#4ade80"/>
+            </svg>
+        </div>
+
+    </div>
+
+    <!-- Liaison avec votre fichier JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>
