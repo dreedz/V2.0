@@ -89,7 +89,12 @@ if (modeBtn) modeBtn.addEventListener('click', () => {
 
 // Met à jour les boutons du menu selon le mode choisi
 function updateMenuButtons() {
-    if (modeBtn) modeBtn.innerText = gameMode === 'mobile' ? '⌨ MODE CLAVIER' : '📱 MODE MOBILE';
+    // Sur téléphone / tablette tactile : toujours le mode mobile, donc pas de bouton pour changer
+    // (le clavier virtuel est indispensable, et un clavier physique branché fonctionne aussi dans ce mode)
+    if (modeBtn) {
+        modeBtn.style.display = isTouchDevice ? 'none' : '';
+        modeBtn.innerText = gameMode === 'mobile' ? '⌨ MODE CLAVIER' : '📱 MODE MOBILE';
+    }
     if (menuHint) {
         menuHint.innerHTML = gameMode === 'mobile'
             ? 'Mode mobile · clavier affiché à l\'écran'
@@ -594,6 +599,7 @@ function saveHighScore() {
 
 function startGame(mode) {
     if (mode === 'clavier' || mode === 'mobile') gameMode = mode;
+    if (isTouchDevice) gameMode = 'mobile'; // sécurité : jamais de mode sans clavier à l'écran sur tactile
     updateMenuButtons();
     applyLayout(gameMode === 'mobile');
 
