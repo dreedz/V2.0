@@ -35,27 +35,88 @@ const virtualKeyboard = document.getElementById('virtual-keyboard');
 const initialTitle = screenTitle ? screenTitle.innerHTML : '';
 const initialStats = screenStats ? screenStats.innerHTML : '';
 
-const wordList = [
+// 📖 Dictionnaire (sans accents). Les doublons éventuels sont retirés automatiquement.
+const wordList = [...new Set([
+    // Animaux
     "RAT", "COQ", "RENARD", "FOURMI", "CHEVAL", "CHIEN", "GIRAFE", "REQUIN", "SOURIS", "OISEAU",
     "SINGE", "TIGRE", "LION", "OURS", "LAPIN", "MOUTON", "CANARD", "DAUPHIN", "BALEINE", "PANDA",
-    "DESERT", "JUNGLE", "FLEUVE", "OCEAN", "NATURE", "ANIMAL", "PLANTE", "FORET", "ESPACE", "PLANETE",
-    "ETOILE", "FUSEE", "MOTEUR", "VOLCAN", "MONTAGNE", "CAMPAGNE", "UNIVERS", "GALAXIE", "ASTEROIDE",
+    "CHAT", "LOUP", "VACHE", "COCHON", "POULE", "ANE", "BICHE", "CERF", "ZEBRE", "HIBOU",
+    "AIGLE", "CORBEAU", "MERLE", "PIGEON", "MOUCHE", "ABEILLE", "GUEPE", "ARAIGNEE", "ESCARGOT", "LIMACE",
+    "CRABE", "HOMARD", "POULPE", "MEDUSE", "PHOQUE", "MORSE", "LOUTRE", "CASTOR", "HERISSON", "TAUPE",
+    "ECUREUIL", "KOALA", "KANGOUROU", "GORILLE", "JAGUAR", "PANTHERE", "GUEPARD", "LEOPARD", "ELEPHANT", "RHINOCEROS",
+    "HYENE", "CHAMEAU", "LAMA", "YACK", "BISON", "TORTUE", "LEZARD", "SERPENT", "CROCODILE", "IGUANE",
+    "PERROQUET", "PINGOUIN", "MANCHOT", "FLAMANT", "CYGNE", "OIE", "DINDE", "AUTRUCHE", "PAON", "MOUETTE",
+    "NARVAL", "ORQUE", "THON", "SAUMON", "TRUITE", "UNICORNE", "VAUTOUR", "WAPITI", "KETCHUP", "ZEBU",
+    "KIWI", "OURSON", "CHATON", "POUSSIN", "VEAU", "AGNEAU", "GRENOUILLE", "TETARD", "PAPILLON", "CHENILLE",
+    // Nature et météo
+    "DESERT", "JUNGLE", "FLEUVE", "OCEAN", "NATURE", "ANIMAL", "PLANTE", "FORET", "MER", "LAC",
+    "ILE", "RIVIERE", "CASCADE", "PLAGE", "SABLE", "ROCHER", "CAILLOU", "GROTTE", "COLLINE", "VALLEE",
+    "PRAIRIE", "ARBRE", "FEUILLE", "BRANCHE", "RACINE", "FLEUR", "ROSE", "TULIPE", "HERBE", "MOUSSE",
+    "SOLEIL", "LUNE", "NUAGE", "PLUIE", "NEIGE", "ORAGE", "ECLAIR", "TONNERRE", "VENT", "BRUME",
+    "GLACE", "GIVRE", "ARC", "AUBE", "NUIT", "JOUR", "MATIN", "SOIR", "HIVER", "ETE",
+    "AUTOMNE", "PRINTEMPS", "SAISON", "TEMPETE", "TORNADE", "OURAGAN", "VAGUE", "MAREE", "ICEBERG", "GLACIER",
+    // Espace
+    "ESPACE", "PLANETE", "ETOILE", "FUSEE", "MOTEUR", "VOLCAN", "MONTAGNE", "CAMPAGNE", "UNIVERS", "GALAXIE",
+    "ASTEROIDE", "COMETE", "ORBITE", "SATELLITE", "COSMOS", "ASTRONAUTE", "NAVETTE", "CRATERE", "METEORE", "NEBULEUSE",
+    "MARS", "VENUS", "JUPITER", "SATURNE", "URANUS", "NEPTUNE", "MERCURE", "TERRE", "PLUTON", "SIRIUS",
+    "ALIEN", "OVNI", "RADAR", "SIGNAL", "LASER", "PLASMA", "ENERGIE", "BOUCLIER", "CAPSULE", "STATION",
+    "PILOTE", "COCKPIT", "HUBLOT", "ANTENNE", "TELESCOPE", "GRAVITE", "ECLIPSE", "QUASAR", "PULSAR", "ZENITH",
+    // École
     "LIVRE", "COURS", "TEXTE", "CODE", "ROBOT", "CLASSE", "ECOLE", "CAHIER", "CRAYON", "PAPIER",
     "DESSIN", "DICTEE", "REGLE", "BUREAU", "LECON", "CALCUL", "LOGIQUE", "SCIENCE", "HISTOIRE",
     "LECTURE", "ECRITURE", "FENETRE", "TABLEAU", "COMPTEUR", "EXERCICE", "GYMNASE", "JEUNESSE",
+    "GOMME", "STYLO", "FEUTRE", "TROUSSE", "CARTABLE", "CISEAUX", "COLLE", "EQUERRE", "COMPAS", "ATLAS",
+    "MOT", "LETTRE", "PHRASE", "VERBE", "NOM", "CHIFFRE", "NOMBRE", "ADDITION", "QUIZ", "QUESTION",
+    "REPONSE", "DEVOIR", "RECREATION", "MAITRE", "ELEVE", "AMI", "COPAIN", "CANTINE", "SONNERIE", "DIPLOME",
+    // Aventure et fantastique
     "JEU", "OR", "ROI", "PIRATE", "NAVIRE", "MAGIE", "DRAGON", "DONJON", "MONSTRE", "ZOMBIE",
     "FANTOME", "SORCIER", "TRESOR", "CHATEAU", "CHASSEUR", "BOUSSOLE", "SQUELETTE", "CHEVALIER",
     "LEGENDE", "MYSTERE", "VICTOIRE", "COMBAT", "DEFENSE", "MISSION", "TACTIQUE", "COURAGE",
+    "REINE", "PRINCE", "PRINCESSE", "FEE", "ELFE", "NAIN", "GEANT", "TROLL", "OGRE", "GOBELIN",
+    "EPEE", "ARMURE", "CASQUE", "LANCE", "ARC", "FLECHE", "POTION", "GRIMOIRE", "BAGUETTE", "SORT",
+    "CARTE", "ILE", "CORSAIRE", "ANCRE", "VOILE", "CANON", "COFFRE", "BIJOU", "RUBIS", "SAPHIR",
+    "EMERAUDE", "DIAMANT", "PERLE", "COURONNE", "SCEPTRE", "TRONE", "ROYAUME", "EMPIRE", "HEROS", "NINJA",
+    "SAMOURAI", "VIKING", "MOMIE", "VAMPIRE", "YETI", "KRAKEN", "HYDRE", "PHENIX", "GRIFFON", "LICORNE",
+    "QUETE", "EXPLORATEUR", "AVENTURE", "VOYAGE", "PIEGE", "INDICE", "ENIGME", "PORTAIL", "TUNNEL", "LABYRINTHE",
+    // Objets et maison
     "PAIN", "EAU", "REPAS", "POMME", "TABLE", "CHAISE", "PORTE", "AVION", "BALLON", "BATEAU",
     "MONTRE", "PANIER", "VALISE", "JOURNAL", "MAISON", "VOITURE", "GUITARE", "MUSIQUE", "HORLOGE",
     "LAMPE", "VETEMENT", "TELEPHONE", "ORDINATEUR", "VELO", "TRAIN", "CAMION",
+    "LIT", "SOFA", "TAPIS", "MIROIR", "ARMOIRE", "TIROIR", "PLACARD", "CUISINE", "SALON", "GARAGE",
+    "JARDIN", "BALCON", "TOIT", "MUR", "CLE", "SERRURE", "BOUGIE", "COUSSIN", "OREILLER", "DOUCHE",
+    "BOL", "VERRE", "TASSE", "ASSIETTE", "FOURCHETTE", "COUTEAU", "CUILLERE", "CASSEROLE", "FOUR", "FRIGO",
+    "ECRAN", "CLAVIER", "SOURIS", "CONSOLE", "MANETTE", "TABLETTE", "CAMERA", "PHOTO", "RADIO", "PIANO",
+    "VIOLON", "TAMBOUR", "TROMPETTE", "FLUTE", "XYLOPHONE", "JOUET", "POUPEE", "PUZZLE", "TOUPIE", "YOYO",
+    "KAYAK", "SKI", "LUGE", "ROLLER", "TROTTINETTE", "MOTO", "BUS", "TAXI", "METRO", "TRACTEUR",
+    "HELICOPTERE", "SOUSMARIN", "WAGON", "GARE", "ROUTE", "PONT", "PHARE", "PORT", "VILLE", "VILLAGE",
+    // Nourriture
+    "RIZ", "THE", "LAIT", "OEUF", "MIEL", "SUCRE", "SEL", "BEURRE", "FROMAGE", "YAOURT",
+    "GATEAU", "BISCUIT", "BONBON", "CHOCOLAT", "CREPE", "GAUFRE", "TARTE", "GLACON", "SOUPE", "SALADE",
+    "PIZZA", "PATES", "FRITES", "BURGER", "SANDWICH", "TOMATE", "CAROTTE", "OIGNON", "CITRON", "ORANGE",
+    "BANANE", "FRAISE", "CERISE", "POIRE", "PECHE", "ABRICOT", "MANGUE", "ANANAS", "KIWI", "RAISIN",
+    "OLIVE", "NOIX", "NOISETTE", "AMANDE", "VANILLE", "CARAMEL", "JUS", "SIROP", "QUICHE", "WIFI",
+    // Corps et sport
+    "MAIN", "PIED", "BRAS", "JAMBE", "TETE", "NEZ", "OEIL", "BOUCHE", "DENT", "OREILLE",
+    "SPORT", "FOOT", "BASKET", "TENNIS", "JUDO", "KARATE", "BOXE", "RUGBY", "GOLF", "NATATION",
+    "COURSE", "SAUT", "MATCH", "EQUIPE", "ARBITRE", "BUT", "PODIUM", "MEDAILLE", "TROPHEE", "CHAMPION",
+    // Verbes
     "VOIR", "FAIRE", "DIRE", "LIRE", "JOUER", "TAPER", "PARLER", "MARCHER", "COURIR", "SAUTER",
     "NAGER", "VOLER", "AIMER", "AIDER", "REVER", "ECRIRE", "PENSER", "TROUVER", "GAGNER", "PERDRE",
     "CHOISIR", "GRANDIR", "REUSSIR", "PARTAGER", "COOPERER", "DECOUVRIR", "INVENTER",
+    "ALLER", "VENIR", "PARTIR", "ARRIVER", "CHANTER", "DANSER", "RIRE", "SOURIRE", "DORMIR", "MANGER",
+    "BOIRE", "CUIRE", "OUVRIR", "FERMER", "TIRER", "VISER", "LANCER", "ATTRAPER", "GRIMPER", "ROULER",
+    "PLONGER", "GLISSER", "FILER", "FONCER", "TOURNER", "BRILLER", "EXPLORER", "CONSTRUIRE", "DESSINER", "COMPTER",
+    "UNIR", "USER", "IMITER", "IGNORER", "JETER", "JONGLER", "KLAXONNER", "QUITTER", "YOUPI", "ZOOMER",
+    // Adjectifs
     "BON", "BEAU", "FORT", "VITE", "GRAND", "PETIT", "RAPIDE", "SOLIDE", "CALME", "JOYEUX",
     "SOLAIRE", "SPATIAL", "SUPERBE", "VISIBLE", "BRILLANT", "MAGNIFIQUE", "AMUSANT",
-    "GENIAL", "AGILE", "HABILE", "BRAVE", "FRANC", "FUTE", "PROPRE"
-];
+    "GENIAL", "AGILE", "HABILE", "BRAVE", "FRANC", "FUTE", "PROPRE",
+    "DOUX", "DUR", "FOU", "VRAI", "FAUX", "NEUF", "VIEUX", "JEUNE", "LOURD", "LEGER",
+    "CHAUD", "FROID", "HAUT", "BAS", "LONG", "COURT", "LARGE", "ETROIT", "PROFOND", "IMMENSE",
+    "ROUGE", "BLEU", "VERT", "JAUNE", "NOIR", "BLANC", "GRIS", "VIOLET", "ROSE", "DORE",
+    "MALIN", "GENTIL", "CURIEUX", "PRUDENT", "TIMIDE", "HEUREUX", "INVINCIBLE", "UNIQUE", "ULTRA", "ZEN",
+    "WESTERN", "WEEKEND", "YOGA", "ZIGZAG", "QUATRE", "QUINZE", "ONZE", "DOUZE", "MILLE"
+].filter(w => /^[A-Z]+$/.test(w)))];
 
 let activeWords = [];
 let targetedWord = null; 
@@ -880,6 +941,12 @@ function spawnWord() {
     else filteredList = wordList;
 
     if (filteredList.length === 0) filteredList = wordList;
+
+    // 🎯 Jamais deux mots à l'écran qui commencent par la même lettre :
+    // la première lettre tapée désigne toujours un seul mot.
+    const usedFirstLetters = new Set(activeWords.map(w => w.text[0]));
+    filteredList = filteredList.filter(word => !usedFirstLetters.has(word[0]));
+    if (filteredList.length === 0) return; // (presque impossible) on réessaiera au prochain tour
     const text = filteredList[Math.floor(Math.random() * filteredList.length)];
     
     const element = document.createElement('div');
