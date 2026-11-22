@@ -92,6 +92,18 @@
                     <div class="how-item"><span class="dot purple"></span> Sans erreur : combo jusqu'à x4</div>
                 </div>
 
+                <!-- 🏆 Entrée dans le Top 3 : saisie du nom -->
+                <form id="name-entry" class="name-entry hidden" autocomplete="off">
+                    <div class="name-entry-title">🏆 TU ENTRES DANS LE TOP 3 !</div>
+                    <div class="name-entry-row">
+                        <input id="name-input" type="text" maxlength="10" placeholder="TON NOM" spellcheck="false" autocapitalize="characters" autocorrect="off" enterkeyhint="done" aria-label="Ton nom">
+                        <button type="submit" id="name-ok-btn" class="name-ok-btn">OK</button>
+                    </div>
+                </form>
+
+                <!-- 🏆 Tableau des 3 meilleurs scores -->
+                <div id="leaderboard" class="leaderboard"></div>
+
                 <div class="menu-buttons">
                     <button id="restart-btn" class="primary-btn">COMMENCER</button>
                     <button id="mode-btn" class="secondary-btn">📱 MODE MOBILE</button>

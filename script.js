@@ -65,7 +65,7 @@ let spawnTimer = 0;
 let score = 0;
 let level = 1;
 let wordsDestroyedInLevel = 0;
-let highScore = parseInt(localStorage.getItem('typing_shooter_highscore'), 10) || 0;
+let highScore = 0; // = 1er du Top 3 (voir section 4 BIS)
 let isPlaying = false;
 let currentCombo = 0;
 let scoreMultiplier = 1;
@@ -84,7 +84,6 @@ let currentZoom = 1; // réglage "VUE" (voir section 6 QUATER)
 const gameW = () => (container ? container.clientWidth : window.innerWidth);
 const gameH = () => (container ? container.clientHeight : window.innerHeight);
 
-if (highScoreElement) highScoreElement.innerText = highScore;
 if (restartBtn) restartBtn.addEventListener('click', () => { restartBtn.blur(); startGame(gameMode); });
 if (modeBtn) modeBtn.addEventListener('click', () => {
     modeBtn.blur();
@@ -109,6 +108,7 @@ updateMenuButtons();
 
 // Touches spéciales : Entrée (lancer / reprendre) et Échap (pause)
 window.addEventListener('keydown', (e) => {
+    if (e.target && e.target.tagName === 'INPUT') return; // on est en train d'écrire son nom
     if (e.key === 'Enter') {
         if (!isPlaying) {
             e.preventDefault(); // évite un double lancement si un bouton a le focus
@@ -605,18 +605,160 @@ function applyLayout(mobile) {
     refreshBackgroundSize(); // le fond s'adapte à la nouvelle taille de la zone de jeu
 }
 
-// Enregistre le record si besoin. Renvoie true si c'est un nouveau record.
-function saveHighScore() {
-    if (score <= highScore) return false;
-    highScore = score;
-    try { localStorage.setItem('typing_shooter_highscore', highScore); } catch (e) { /* stockage indisponible */ }
-    if (highScoreElement) highScoreElement.innerText = highScore;
-    return true;
+// ==========================================
+// 4 BIS. 🏆 TOP 3 DES MEILLEURS SCORES
+// ==========================================
+const LEADERBOARD_KEY = 'typing_shooter_top3';
+const LAST_NAME_KEY = 'typing_shooter_lastname';
+const LEADERBOARD_SIZE = 3;
+const leaderboardElement = document.getElementById('leaderboard');
+const nameEntryForm = document.getElementById('name-entry');
+const nameInput = document.getElementById('name-input');
+let leaderboard = [];
+let pendingEntry = null; // score qui vient d'entrer dans le Top 3 (en attente du nom)
+
+function readStore(key) {
+    try { return localStorage.getItem(key); } catch (e) { return null; }
 }
+function writeStore(key, value) {
+    try { localStorage.setItem(key, value); } catch (e) { /* stockage indisponible */ }
+}
+
+// Nettoie un nom : majuscules, 10 caractères max, pas de caractères bizarres
+function cleanName(raw) {
+    return String(raw || '').toUpperCase()
+        .replace(/[^A-Z0-9ÀÂÄÇÉÈÊËÎÏÔÖÙÛÜ _.\-]/g, '')
+        .replace(/\s+/g, ' ').trim().slice(0, 10);
+}
+
+function loadLeaderboard() {
+    let list = [];
+    try { list = JSON.parse(readStore(LEADERBOARD_KEY)) || []; } catch (e) { list = []; }
+    if (!Array.isArray(list)) list = [];
+    list = list
+        .filter(r => r && Number.isFinite(r.score) && r.score > 0)
+        .map(r => ({ name: cleanName(r.name) || 'PILOTE', score: Math.floor(r.score), level: r.level || null }));
+    // Ancienne version du jeu : un seul record sans nom → on le garde
+    if (list.length === 0) {
+        const old = parseInt(readStore('typing_shooter_highscore'), 10) || 0;
+        if (old > 0) list.push({ name: 'PILOTE', score: old, level: null });
+    }
+    list.sort((a, b) => b.score - a.score);
+    return list.slice(0, LEADERBOARD_SIZE);
+}
+
+function storeLeaderboard() {
+    writeStore(LEADERBOARD_KEY, JSON.stringify(leaderboard));
+    writeStore('typing_shooter_highscore', leaderboard.length ? leaderboard[0].score : 0); // compatibilité
+    highScore = leaderboard.length ? leaderboard[0].score : 0;
+    if (highScoreElement) highScoreElement.innerText = highScore;
+}
+
+function qualifiesForLeaderboard(s) {
+    if (s <= 0) return false;
+    return leaderboard.length < LEADERBOARD_SIZE || s > leaderboard[leaderboard.length - 1].score;
+}
+
+// Ajoute le score au classement. Renvoie l'entrée créée (ou null si pas qualifié).
+function addToLeaderboard(s, lvl) {
+    if (!qualifiesForLeaderboard(s)) return null;
+    const entry = { name: cleanName(readStore(LAST_NAME_KEY)) || 'PILOTE', score: s, level: lvl };
+    // À égalité, le score le plus ancien reste devant
+    let i = leaderboard.findIndex(r => s > r.score);
+    if (i === -1) i = leaderboard.length;
+    leaderboard.splice(i, 0, entry);
+    leaderboard = leaderboard.slice(0, LEADERBOARD_SIZE);
+    storeLeaderboard();
+    return entry;
+}
+
+// Affiche le tableau (avec la ligne "highlight" mise en valeur)
+function renderLeaderboard(highlight = null) {
+    if (!leaderboardElement) return;
+    const medals = ['🥇', '🥈', '🥉'];
+    leaderboardElement.innerHTML = '';
+
+    const title = document.createElement('div');
+    title.className = 'lb-title';
+    title.innerText = '🏆 MEILLEURS PILOTES';
+    leaderboardElement.appendChild(title);
+
+    for (let i = 0; i < LEADERBOARD_SIZE; i++) {
+        const r = leaderboard[i];
+        const row = document.createElement('div');
+        row.className = 'lb-row rank-' + (i + 1) + (r ? '' : ' empty') + (r && r === highlight ? ' is-new' : '');
+
+        const medal = document.createElement('span');
+        medal.className = 'lb-medal';
+        medal.innerText = medals[i];
+
+        const name = document.createElement('span');
+        name.className = 'lb-name';
+        name.innerText = r ? r.name : '- - -'; // innerText : aucun HTML injecté depuis le nom
+
+        const lvl = document.createElement('span');
+        lvl.className = 'lb-level';
+        lvl.innerText = r && r.level ? 'NIV ' + r.level : '';
+
+        const sc = document.createElement('span');
+        sc.className = 'lb-score';
+        sc.innerText = r ? r.score : '';
+
+        row.append(medal, name, lvl, sc);
+        leaderboardElement.appendChild(row);
+    }
+}
+
+// Affiche (ou cache) le champ pour écrire son nom
+function showNameEntry(entry) {
+    pendingEntry = entry;
+    if (!nameEntryForm) return;
+    nameEntryForm.classList.toggle('hidden', !entry);
+    if (!entry || !nameInput) return;
+    nameInput.value = cleanName(readStore(LAST_NAME_KEY));
+    nameInput.dispatchEvent(new Event('input'));
+    // Sur PC on peut écrire directement ; sur tactile on laisse le joueur toucher le champ
+    // (sinon le clavier du téléphone surgit d'un coup)
+    if (!isTouchDevice) setTimeout(() => { nameInput.focus(); nameInput.select(); }, 50);
+}
+
+if (nameInput) nameInput.addEventListener('input', () => {
+    // Majuscules + caractères autorisés (on garde l'espace en cours de frappe)
+    const v = nameInput.value.toUpperCase().replace(/[^A-Z0-9ÀÂÄÇÉÈÊËÎÏÔÖÙÛÜ _.\-]/g, '').slice(0, 10);
+    if (v !== nameInput.value) nameInput.value = v;
+    // Le nom apparaît en direct dans le classement
+    const liveName = leaderboardElement && leaderboardElement.querySelector('.lb-row.is-new .lb-name');
+    if (liveName) liveName.innerText = cleanName(v) || 'PILOTE';
+});
+
+// Valide le nom écrit (bouton OK / Entrée, ou automatiquement si on relance une partie)
+function confirmName(withSound = true) {
+    if (nameInput) nameInput.blur();
+    if (!pendingEntry) return;
+    const name = cleanName(nameInput ? nameInput.value : '') || 'PILOTE';
+    pendingEntry.name = name;
+    writeStore(LAST_NAME_KEY, name);
+    storeLeaderboard();
+    const saved = pendingEntry;
+    showNameEntry(null);
+    renderLeaderboard(saved);
+    if (withSound) playComboSound(3);
+}
+
+if (nameEntryForm) nameEntryForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    confirmName();
+});
+
+leaderboard = loadLeaderboard();
+storeLeaderboard();
+renderLeaderboard();
 
 function startGame(mode) {
     if (mode === 'clavier' || mode === 'mobile') gameMode = mode;
     if (isTouchDevice) gameMode = 'mobile'; // sécurité : jamais de mode sans clavier à l'écran sur tactile
+    // Si le joueur relance sans valider son nom, on l'enregistre tel qu'il est écrit
+    confirmName(false);
     updateMenuButtons();
     applyLayout(gameMode === 'mobile');
 
@@ -678,7 +820,8 @@ function triggerGameOver() {
     stopMusic();
     playGameOverSound();
 
-    const newRecord = saveHighScore();
+    const entry = addToLeaderboard(score, level);
+    const newRecord = entry !== null && leaderboard[0] === entry;
 
     if (screenTitle) screenTitle.innerText = "GAME OVER";
     if (screenStats) screenStats.innerHTML = `
@@ -688,6 +831,8 @@ function triggerGameOver() {
             <div class="stat"><div class="stat-label">RECORD</div><div class="stat-value">${highScore}</div></div>
         </div>
         ${newRecord ? '<div class="new-record">★ NOUVEAU RECORD ★</div>' : ''}`;
+    renderLeaderboard(entry);
+    showNameEntry(entry);
     if (restartBtn) restartBtn.innerText = "REJOUER";
     if (gameOverScreen) {
         gameOverScreen.classList.add('is-game-over');
@@ -1093,7 +1238,7 @@ function quitToMenu() {
     isPaused = false;
     clearInterval(gameInterval);
     gameInterval = null;
-    saveHighScore();
+    // Une partie abandonnée ne compte pas dans le Top 3 (seules les parties terminées comptent)
     clearField();
 
     document.body.classList.remove('is-playing', 'is-paused');
@@ -1105,6 +1250,8 @@ function quitToMenu() {
     if (screenTitle) screenTitle.innerHTML = initialTitle;
     if (screenStats) screenStats.innerHTML = initialStats;
     if (restartBtn) restartBtn.innerText = 'COMMENCER';
+    showNameEntry(null);
+    renderLeaderboard();
     if (gameOverScreen) {
         gameOverScreen.classList.remove('is-game-over');
         gameOverScreen.classList.remove('hidden');
