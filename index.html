@@ -171,7 +171,16 @@
 
         <!-- 🎚️ BOUTONS SON (cliquables à tout moment) -->
         <div id="sound-controls">
-            <button id="zoom-btn" class="sound-btn" title="Taille de l'affichage : plus petit = vision plus large">⤢ VUE 100%</button>
+            <button id="zoom-btn" class="sound-btn" title="Taille de l'affichage : plus petit = vision plus large" aria-label="Changer la vue">
+                <!-- Loupe avec un "moins" : réduire l'affichage pour voir plus large -->
+                <svg class="zoom-icon" viewBox="0 0 24 24" width="14" height="14">
+                    <circle cx="10" cy="10" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/>
+                    <path d="M 15 15 L 21 21" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
+                    <path d="M 7 10 L 13 10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+                </svg>
+                <span class="zoom-label">VUE</span>
+                <span class="zoom-value">100%</span>
+            </button>
             <button id="music-btn" class="sound-btn" title="Couper / remettre la musique">♪ MUSIQUE</button>
             <button id="sfx-btn" class="sound-btn" title="Couper / remettre les effets sonores">✦ EFFETS</button>
         </div>

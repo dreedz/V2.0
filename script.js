@@ -1220,7 +1220,8 @@ function setZoom(z, keepWordsInPlace = true) {
     currentZoom = z;
     document.documentElement.style.setProperty('--zoom', z);
     try { localStorage.setItem('typing_shooter_zoom', z); } catch (e) { /* stockage indisponible */ }
-    if (zoomBtn) zoomBtn.innerText = '⤢ VUE ' + Math.round(z * 100) + '%';
+    const zoomValue = zoomBtn ? zoomBtn.querySelector('.zoom-value') : null;
+    if (zoomValue) zoomValue.innerText = Math.round(z * 100) + '%';
 
     // La zone de jeu change de taille : on garde la même position relative des mots et lasers
     if (keepWordsInPlace && oldW > 0 && oldH > 0) {
