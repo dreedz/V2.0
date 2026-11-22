@@ -1,7 +1,10 @@
 // ==========================================
 // 1. CONFIGURATION & VARIABLES GLOBALES
 // ==========================================
-const container = document.getElementById('game-container');
+// Le "monde" du jeu (zoomable) : mots, lasers, vaisseau, menus...
+const container = document.getElementById('game-world') || document.getElementById('game-container');
+// Le cadre extérieur (non zoomé) : c'est lui qui tremble lors des explosions
+const gameFrame = document.getElementById('game-container');
 const scoreElement = document.getElementById('score');
 const levelElement = document.getElementById('level');
 const streakElement = document.getElementById('streak');
@@ -75,6 +78,7 @@ let countdownTimer = null;
 const isTouchDevice = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
 let gameMode = isTouchDevice ? 'mobile' : 'clavier';
 const MOBILE_SPEED_FACTOR = 0.75; // en mode mobile les mots tombent 25 % moins vite
+let currentZoom = 1; // réglage "VUE" (voir section 6 QUATER)
 
 // Dimensions de la zone de jeu (plus petite que l'écran en mode mobile, à cause du clavier)
 const gameW = () => (container ? container.clientWidth : window.innerWidth);
@@ -145,9 +149,22 @@ function showFloatingText(x, y, html, className = '') {
     setTimeout(() => el.remove(), 1100);
 }
 
-// Centre d'un élément à l'écran
+// Position d'un élément dans le "monde" du jeu.
+// (getBoundingClientRect donne la position à l'écran, déjà réduite par le zoom :
+//  on la convertit pour qu'elle corresponde aux coordonnées des mots et des lasers)
+function localRect(el) {
+    const r = el.getBoundingClientRect();
+    const o = container.getBoundingClientRect();
+    const left = (r.left - o.left) / currentZoom;
+    const top = (r.top - o.top) / currentZoom;
+    const width = r.width / currentZoom;
+    const height = r.height / currentZoom;
+    return { left, top, width, height, right: left + width, bottom: top + height };
+}
+
+// Centre d'un élément dans le monde du jeu
 function getCenter(element) {
-    const r = element.getBoundingClientRect();
+    const r = localRect(element);
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
 }
 
@@ -539,10 +556,10 @@ refreshSoundButtons();
 // ==========================================
 function triggerScreenShake() {
     if (!container) return;
-    container.classList.remove('shake-active');
-    void container.offsetWidth; 
-    container.classList.add('shake-active');
-    setTimeout(() => { container.classList.remove('shake-active'); }, 200);
+    gameFrame.classList.remove('shake-active');
+    void gameFrame.offsetWidth; 
+    gameFrame.classList.add('shake-active');
+    setTimeout(() => { gameFrame.classList.remove('shake-active'); }, 200);
 }
 
 function createExplosion(x, y, color = '#f43f5e') {
@@ -812,7 +829,7 @@ function updateGame() {
         if (activeWords.includes(l.wordRef)) {
             const targetLetterElement = getLetter(l.wordRef, l.targetIndex);
             if (targetLetterElement) {
-                const letterRect = targetLetterElement.getBoundingClientRect();
+                const letterRect = localRect(targetLetterElement);
                 if (l.y <= letterRect.bottom && l.y >= letterRect.top - 20) {
                     if (!l.wordRef.hits[l.targetIndex]) {
                         // Les lasers peuvent arriver dans le désordre (angles différents) :
@@ -907,7 +924,7 @@ window.addEventListener('keydown', (e) => {
 // Renvoie true si la lettre était correcte.
 function handleLetter(keyPressed) {
     if (!isPlaying || isPaused || !playerShip) return false;
-    const shipRect = playerShip.getBoundingClientRect();
+    const shipRect = localRect(playerShip);
     const shipX = shipRect.left + shipRect.width / 2; 
     const shipY = shipRect.top + shipRect.height / 2;
     let toucheCorrecte = false;
@@ -920,7 +937,7 @@ function handleLetter(keyPressed) {
             const letterElement = getLetter(targetedWord, targetedWord.typedIndex);
             if (letterElement) {
                 letterElement.className = 'letter active';
-                const letterRect = letterElement.getBoundingClientRect();
+                const letterRect = localRect(letterElement);
                 createLaser(shipX, shipY, letterRect.left + letterRect.width / 2, letterRect.top + letterRect.height / 2, targetedWord, targetedWord.typedIndex);
             }
             targetedWord.typedIndex++;
@@ -966,7 +983,7 @@ function handleLetter(keyPressed) {
             const letterElement = getLetter(targetedWord, currentIndex);
             if (letterElement) {
                 letterElement.className = 'letter active';
-                const letterRect = letterElement.getBoundingClientRect();
+                const letterRect = localRect(letterElement);
                 createLaser(shipX, shipY, letterRect.left + letterRect.width / 2, letterRect.top + letterRect.height / 2, targetedWord, currentIndex);
             }
             targetedWord.typedIndex++;
@@ -1179,6 +1196,54 @@ function setKeyboardVisible(visible) {
     }
     refreshBackgroundSize();
 }
+
+// ==========================================
+// 6 QUATER. RÉGLAGE "VUE" (ZOOM DE LA ZONE DE JEU)
+// ==========================================
+// Plus le pourcentage est petit, plus tout est petit à l'écran et plus on voit de terrain
+// (les mots apparaissent donc plus tôt et on a plus de temps pour les taper).
+const ZOOM_LEVELS = [1, 0.85, 0.7, 0.55];
+const zoomBtn = document.getElementById('zoom-btn');
+// Tablette (tactile, petit côté de l'écran ≥ 600 px) : vue 70 % par défaut. Sinon 100 %.
+const isTablet = isTouchDevice && Math.min(screen.width, screen.height) >= 600;
+const DEFAULT_ZOOM = isTablet ? 0.7 : 1;
+
+function loadZoom() {
+    try {
+        const v = parseFloat(localStorage.getItem('typing_shooter_zoom'));
+        return ZOOM_LEVELS.includes(v) ? v : DEFAULT_ZOOM;
+    } catch (e) { return DEFAULT_ZOOM; }
+}
+
+function setZoom(z, keepWordsInPlace = true) {
+    const oldW = gameW(), oldH = gameH();
+    currentZoom = z;
+    document.documentElement.style.setProperty('--zoom', z);
+    try { localStorage.setItem('typing_shooter_zoom', z); } catch (e) { /* stockage indisponible */ }
+    if (zoomBtn) zoomBtn.innerText = '⤢ VUE ' + Math.round(z * 100) + '%';
+
+    // La zone de jeu change de taille : on garde la même position relative des mots et lasers
+    if (keepWordsInPlace && oldW > 0 && oldH > 0) {
+        const rx = gameW() / oldW, ry = gameH() / oldH;
+        activeWords.forEach(w => {
+            w.posX *= rx; w.posY *= ry;
+            if (w.element) { w.element.style.left = w.posX + 'px'; w.element.style.top = w.posY + 'px'; }
+        });
+        lasers.forEach(l => {
+            l.x *= rx; l.y *= ry;
+            if (l.element) { l.element.style.left = l.x + 'px'; l.element.style.top = l.y + 'px'; }
+        });
+        refreshBackgroundSize();
+    }
+}
+
+if (zoomBtn) zoomBtn.addEventListener('click', () => {
+    zoomBtn.blur();
+    const i = ZOOM_LEVELS.indexOf(currentZoom);
+    setZoom(ZOOM_LEVELS[(i + 1) % ZOOM_LEVELS.length]);
+});
+
+setZoom(loadZoom(), false); // applique la vue enregistrée au démarrage
 
 // Applique le choix enregistré au démarrage (sans toucher au fond, qui n'est pas encore créé)
 document.body.classList.toggle('vk-hidden', !keyboardVisible);

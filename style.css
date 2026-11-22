@@ -46,6 +46,21 @@ body {
     overflow: hidden;
 }
 
+/* 🔍 MONDE DU JEU (réglage VUE)
+   On agrandit la zone de jeu (100% / zoom) puis on la réduit à l'écran (scale) :
+   à 70 %, on voit 1,4 fois plus de terrain dans chaque direction. */
+:root { --zoom: 1; }
+#game-world {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: calc(100% / var(--zoom));
+    height: calc(100% / var(--zoom));
+    transform: scale(var(--zoom));
+    transform-origin: 0 0;
+    overflow: hidden;
+}
+
 /* 🌌 Canvas du fond spatial */
 #space-bg {
     position: absolute;
