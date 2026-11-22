@@ -1156,6 +1156,39 @@ if (virtualKeyboard) {
     virtualKeyboard.addEventListener('contextmenu', (e) => e.preventDefault());
 }
 
+// ⌨️ Afficher / masquer le clavier virtuel (choix mémorisé)
+const keyboardToggle = document.getElementById('keyboard-toggle');
+let keyboardVisible = loadSetting('typing_shooter_keyboard', true);
+
+function setKeyboardVisible(visible) {
+    const oldH = gameH();
+    keyboardVisible = visible;
+    document.body.classList.toggle('vk-hidden', !visible);
+    saveSetting('typing_shooter_keyboard', visible);
+    if (keyboardToggle) keyboardToggle.title = visible ? 'Masquer le clavier' : 'Afficher le clavier';
+
+    // La zone de jeu change de hauteur : on garde la même progression des mots
+    // (sinon, en réaffichant le clavier, un mot pourrait se retrouver d'un coup sous le bouclier)
+    const newH = gameH();
+    if (oldH > 0 && newH !== oldH) {
+        const ratio = newH / oldH;
+        activeWords.forEach(w => {
+            w.posY *= ratio;
+            if (w.element) w.element.style.top = w.posY + 'px';
+        });
+    }
+    refreshBackgroundSize();
+}
+
+// Applique le choix enregistré au démarrage (sans toucher au fond, qui n'est pas encore créé)
+document.body.classList.toggle('vk-hidden', !keyboardVisible);
+if (keyboardToggle) keyboardToggle.title = keyboardVisible ? 'Masquer le clavier' : 'Afficher le clavier';
+
+if (keyboardToggle) keyboardToggle.addEventListener('click', () => {
+    keyboardToggle.blur();
+    setKeyboardVisible(!keyboardVisible);
+});
+
 // Téléphone tourné à l'horizontale en mode mobile : on met en pause automatiquement
 const landscapePhoneQuery = window.matchMedia('(orientation: landscape) and (max-height: 500px)');
 function checkOrientation() {

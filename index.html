@@ -139,6 +139,25 @@
             <button id="sfx-btn" class="sound-btn" title="Couper / remettre les effets sonores">✦ EFFETS</button>
         </div>
 
+        <!-- ⌨️ BOUTON AFFICHER / MASQUER LE CLAVIER VIRTUEL (mode mobile) -->
+        <button id="keyboard-toggle" class="keyboard-toggle" title="Afficher / masquer le clavier" aria-label="Afficher ou masquer le clavier">
+            <svg viewBox="0 0 32 24" width="28" height="21">
+                <rect x="1.5" y="1.5" width="29" height="21" rx="3.5" fill="none" stroke="currentColor" stroke-width="2"/>
+                <g fill="currentColor">
+                    <rect x="5" y="5.5" width="3" height="3" rx="0.6"/><rect x="10" y="5.5" width="3" height="3" rx="0.6"/>
+                    <rect x="15" y="5.5" width="3" height="3" rx="0.6"/><rect x="20" y="5.5" width="3" height="3" rx="0.6"/>
+                    <rect x="25" y="5.5" width="2.5" height="3" rx="0.6"/>
+                    <rect x="6.5" y="10.5" width="3" height="3" rx="0.6"/><rect x="11.5" y="10.5" width="3" height="3" rx="0.6"/>
+                    <rect x="16.5" y="10.5" width="3" height="3" rx="0.6"/><rect x="21.5" y="10.5" width="3" height="3" rx="0.6"/>
+                    <rect x="9" y="15.5" width="14" height="3" rx="0.6"/>
+                </g>
+            </svg>
+            <!-- Petite flèche : vers le bas = masquer, vers le haut = afficher -->
+            <svg class="kb-arrow" viewBox="0 0 12 8" width="12" height="8">
+                <path d="M 1 1.5 L 6 6.5 L 11 1.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
+
         <!-- 🚀 LE VAISSEAU DU JOUEUR -->
         <div id="player-ship">
             <svg viewBox="0 0 80 100" width="100%" height="100%">

@@ -794,6 +794,39 @@ body.mobile-mode #virtual-keyboard {
     touch-action: none; /* pas de zoom ni de défilement en tapant vite */
     transition: opacity 0.2s;
 }
+/* Clavier masqué par le joueur : la zone de jeu prend toute la hauteur */
+body.mobile-mode.vk-hidden #virtual-keyboard { display: none; }
+
+/* ⌨️ Bouton afficher / masquer le clavier (bas gauche de la zone de jeu) */
+.keyboard-toggle { display: none; }
+body.mobile-mode .keyboard-toggle {
+    position: absolute;
+    left: 8px;
+    bottom: 8px;
+    z-index: 110;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    padding: 6px 8px 4px;
+    color: var(--cyan);
+    background: linear-gradient(180deg, var(--panel-bg), rgba(8, 14, 30, 0.45));
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    box-shadow: 0 0 14px rgba(34, 211, 238, 0.2);
+    backdrop-filter: blur(5px);
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.1s, box-shadow 0.15s;
+}
+body.mobile-mode .keyboard-toggle:active { transform: scale(0.92); }
+.keyboard-toggle svg { filter: drop-shadow(0 0 5px var(--cyan)); }
+.keyboard-toggle .kb-arrow { transition: transform 0.2s; }
+/* Clavier masqué : la flèche pointe vers le haut (= "afficher") et le bouton pulse doucement */
+body.vk-hidden .keyboard-toggle .kb-arrow { transform: rotate(180deg); }
+body.mobile-mode.vk-hidden .keyboard-toggle { animation: btn-glow 2s ease-in-out infinite; }
+
 body.mobile-mode.is-paused #virtual-keyboard {
     opacity: 0.35;
     pointer-events: none;
