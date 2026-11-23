@@ -95,8 +95,8 @@ function weekStartIso() {
 const boardCacheKey = () => (boardKind() === 'defi' ? 'defi|' + todayKey() : `classique|${difficulty}|${boardPeriod}`);
 // Filtre de la base pour un classement
 function boardFilter(kind = boardKind(), diff = effectiveDifficulty(), period = boardPeriod) {
-    if (kind === 'defi') return `&mode=eq.defi&day=eq.${todayKey()}`;
-    return `&mode=eq.classique&difficulty=eq.${diff}` + (period === 'week' ? `&created_at=gte.${encodeURIComponent(weekStartIso())}` : '');
+    if (kind === 'defi') return `&game_mode=eq.defi&day=eq.${todayKey()}`;
+    return `&game_mode=eq.classique&difficulty=eq.${diff}` + (period === 'week' ? `&created_at=gte.${encodeURIComponent(weekStartIso())}` : '');
 }
 
 function onlineFetch(path, options = {}) {
