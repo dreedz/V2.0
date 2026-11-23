@@ -8,7 +8,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <!-- 🔄 Anti-cache : un numéro unique est ajouté aux fichiers du jeu à chaque ouverture,
+         pour toujours charger la dernière version (plus besoin de CTRL+F5) -->
+    <meta http-equiv="Cache-Control" content="no-cache">
+    <script>
+        window.ASSET_V = Date.now();
+        document.write('<link rel="stylesheet" href="style.css?v=' + window.ASSET_V + '">');
+    </script>
+    <noscript><link rel="stylesheet" href="style.css"></noscript>
 </head>
 <body>
 
@@ -257,6 +264,6 @@
     </div>
 
     <!-- Liaison avec votre fichier JavaScript -->
-    <script src="script.js"></script>
+    <script>document.write('<script src="script.js?v=' + window.ASSET_V + '"><\/script>');</script>
 </body>
 </html>
