@@ -641,6 +641,59 @@ h1 {
 .overlay > .menu-card { margin: auto; }
 
 /* ==========================================
+   🎚️ CHOIX DE LA DIFFICULTÉ
+   ========================================== */
+.difficulty {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    max-width: 400px;
+    margin: 0 auto 18px;
+}
+.diff-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 10px 8px;
+    font-family: var(--font-ui);
+    color: var(--text-dim);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, color 0.15s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+.diff-btn:hover { border-color: rgba(34, 211, 238, 0.5); }
+.diff-name {
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 3px;
+}
+.diff-desc {
+    font-family: var(--font-words);
+    font-size: 11px;
+    letter-spacing: 0;
+    opacity: 0.8;
+}
+.diff-btn.active[data-diff="simple"] {
+    color: var(--cyan);
+    background: rgba(34, 211, 238, 0.1);
+    border-color: var(--cyan);
+    box-shadow: 0 0 14px rgba(34, 211, 238, 0.35), inset 0 0 10px rgba(34, 211, 238, 0.1);
+}
+.diff-btn.active[data-diff="avance"] {
+    color: #e9d5ff;
+    background: rgba(168, 85, 247, 0.14);
+    border-color: var(--purple);
+    box-shadow: 0 0 14px rgba(168, 85, 247, 0.45), inset 0 0 10px rgba(168, 85, 247, 0.12);
+}
+.diff-btn.active[data-diff="avance"] .diff-name { color: #f0abfc; text-shadow: 0 0 10px var(--purple); }
+
+
+/* ==========================================
    🏆 TOP 3 DES MEILLEURS SCORES
    ========================================== */
 .leaderboard {
@@ -710,6 +763,19 @@ h1 {
     0%, 100% { box-shadow: 0 0 10px rgba(34, 211, 238, 0.3), inset 0 0 10px rgba(34, 211, 238, 0.08); }
     50%      { box-shadow: 0 0 22px rgba(34, 211, 238, 0.7), inset 0 0 14px rgba(34, 211, 238, 0.18); }
 }
+
+/* Place au classement mondial */
+.online-rank {
+    margin: -12px auto 18px;
+    max-width: 400px;
+    font-family: var(--font-ui);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--cyan);
+    text-shadow: 0 0 8px rgba(34, 211, 238, 0.5);
+}
+.online-rank.hidden { display: none; }
 
 /* Saisie du nom */
 .name-entry {

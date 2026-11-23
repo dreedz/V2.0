@@ -92,6 +92,18 @@
                     <div class="how-item"><span class="dot purple"></span> Sans erreur : combo jusqu'à x4</div>
                 </div>
 
+                <!-- 🎚️ Choix de la difficulté -->
+                <div id="difficulty" class="difficulty" role="radiogroup" aria-label="Difficulté">
+                    <button type="button" class="diff-btn" data-diff="simple" role="radio">
+                        <span class="diff-name">SIMPLE</span>
+                        <span class="diff-desc">mots sans accents</span>
+                    </button>
+                    <button type="button" class="diff-btn" data-diff="avance" role="radio">
+                        <span class="diff-name">AVANCÉ</span>
+                        <span class="diff-desc">avec les accents é et è</span>
+                    </button>
+                </div>
+
                 <!-- 🏆 Entrée dans le Top 3 : saisie du nom -->
                 <form id="name-entry" class="name-entry hidden" autocomplete="off">
                     <div class="name-entry-title">🏆 TU ENTRES DANS LE TOP 3 !</div>
@@ -103,6 +115,8 @@
 
                 <!-- 🏆 Tableau des 3 meilleurs scores -->
                 <div id="leaderboard" class="leaderboard"></div>
+                <!-- 🌍 Place au classement mondial (après l'envoi du score) -->
+                <div id="online-rank" class="online-rank hidden"></div>
 
                 <div class="menu-buttons">
                     <button id="restart-btn" class="primary-btn">COMMENCER</button>

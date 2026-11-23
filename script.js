@@ -46,7 +46,7 @@ const wordList = [...new Set([
     "ECUREUIL", "KOALA", "KANGOUROU", "GORILLE", "JAGUAR", "PANTHERE", "GUEPARD", "LEOPARD", "ELEPHANT", "RHINOCEROS",
     "HYENE", "CHAMEAU", "LAMA", "YACK", "BISON", "TORTUE", "LEZARD", "SERPENT", "CROCODILE", "IGUANE",
     "PERROQUET", "PINGOUIN", "MANCHOT", "FLAMANT", "CYGNE", "OIE", "DINDE", "AUTRUCHE", "PAON", "MOUETTE",
-    "NARVAL", "ORQUE", "THON", "SAUMON", "TRUITE", "UNICORNE", "VAUTOUR", "WAPITI", "KETCHUP", "ZEBU",
+    "NARVAL", "ORQUE", "THON", "SAUMON", "TRUITE", "VAUTOUR", "WAPITI", "KETCHUP", "ZEBU",
     "KIWI", "OURSON", "CHATON", "POUSSIN", "VEAU", "AGNEAU", "GRENOUILLE", "TETARD", "PAPILLON", "CHENILLE",
     // Nature et météo
     "DESERT", "JUNGLE", "FLEUVE", "OCEAN", "NATURE", "ANIMAL", "PLANTE", "FORET", "MER", "LAC",
@@ -117,6 +117,77 @@ const wordList = [...new Set([
     "MALIN", "GENTIL", "CURIEUX", "PRUDENT", "TIMIDE", "HEUREUX", "INVINCIBLE", "UNIQUE", "ULTRA", "ZEN",
     "WESTERN", "WEEKEND", "YOGA", "ZIGZAG", "QUATRE", "QUINZE", "ONZE", "DOUZE", "MILLE"
 ].filter(w => /^[A-Z]+$/.test(w)))];
+
+// 📖 Dictionnaire du mode AVANCÉ : les mêmes mots avec leur vraie orthographe + des mots à accents en plus.
+// Seulement É et È (mode avancé = clavier physique uniquement, pas sur mobile).
+// Les mots avec d'autres accents (Ê, À, Ç, Â...) sont retirés automatiquement par ce filtre.
+const ACCENT_KEYS = 'ÉÈ';
+const ADVANCED_WORD_REGEX = /^[A-ZÉÈ]+$/;
+
+// Orthographe correcte des mots du mode simple
+const ACCENTED_SPELLING = {
+    ANE: "ÂNE", ZEBRE: "ZÈBRE", GUEPE: "GUÊPE", ARAIGNEE: "ARAIGNÉE", MEDUSE: "MÉDUSE", HERISSON: "HÉRISSON",
+    ECUREUIL: "ÉCUREUIL", PANTHERE: "PANTHÈRE", GUEPARD: "GUÉPARD", LEOPARD: "LÉOPARD", ELEPHANT: "ÉLÉPHANT",
+    RHINOCEROS: "RHINOCÉROS", HYENE: "HYÈNE", LEZARD: "LÉZARD", TETARD: "TÊTARD", ZEBU: "ZÉBU",
+    DESERT: "DÉSERT", OCEAN: "OCÉAN", FORET: "FORÊT", ILE: "ÎLE", RIVIERE: "RIVIÈRE", VALLEE: "VALLÉE",
+    ECLAIR: "ÉCLAIR", ETE: "ÉTÉ", TEMPETE: "TEMPÊTE", MAREE: "MARÉE",
+    PLANETE: "PLANÈTE", ETOILE: "ÉTOILE", FUSEE: "FUSÉE", COMETE: "COMÈTE", CRATERE: "CRATÈRE", METEORE: "MÉTÉORE",
+    NEBULEUSE: "NÉBULEUSE", VENUS: "VÉNUS", ENERGIE: "ÉNERGIE", TELESCOPE: "TÉLESCOPE", GRAVITE: "GRAVITÉ",
+    ECLIPSE: "ÉCLIPSE", ZENITH: "ZÉNITH",
+    ECOLE: "ÉCOLE", DICTEE: "DICTÉE", REGLE: "RÈGLE", LECON: "LEÇON", ECRITURE: "ÉCRITURE", FENETRE: "FENÊTRE",
+    EQUERRE: "ÉQUERRE", REPONSE: "RÉPONSE", RECREATION: "RÉCRÉATION", MAITRE: "MAÎTRE", ELEVE: "ÉLÈVE", DIPLOME: "DIPLÔME",
+    FANTOME: "FANTÔME", TRESOR: "TRÉSOR", CHATEAU: "CHÂTEAU", LEGENDE: "LÉGENDE", MYSTERE: "MYSTÈRE", DEFENSE: "DÉFENSE",
+    FEE: "FÉE", GEANT: "GÉANT", EPEE: "ÉPÉE", FLECHE: "FLÈCHE", EMERAUDE: "ÉMERAUDE", TRONE: "TRÔNE", HEROS: "HÉROS",
+    QUETE: "QUÊTE", PIEGE: "PIÈGE", ENIGME: "ÉNIGME", PHENIX: "PHÉNIX", YETI: "YÉTI",
+    VETEMENT: "VÊTEMENT", TELEPHONE: "TÉLÉPHONE", VELO: "VÉLO", ECRAN: "ÉCRAN", CAMERA: "CAMÉRA", POUPEE: "POUPÉE",
+    METRO: "MÉTRO", HELICOPTERE: "HÉLICOPTÈRE", CUILLERE: "CUILLÈRE", CLE: "CLÉ", FLUTE: "FLÛTE",
+    THE: "THÉ", GATEAU: "GÂTEAU", CREPE: "CRÊPE", GLACON: "GLAÇON", PATES: "PÂTES", PECHE: "PÊCHE",
+    TETE: "TÊTE", EQUIPE: "ÉQUIPE", MEDAILLE: "MÉDAILLE", TROPHEE: "TROPHÉE", KARATE: "KARATÉ",
+    REVER: "RÊVER", REUSSIR: "RÉUSSIR", COOPERER: "COOPÉRER", DECOUVRIR: "DÉCOUVRIR", ECRIRE: "ÉCRIRE",
+    GENIAL: "GÉNIAL", FUTE: "FUTÉ", LEGER: "LÉGER", ETROIT: "ÉTROIT", DORE: "DORÉ"
+};
+// Mots du mode simple qui demanderaient une lettre absente du clavier (Ï, Œ, trait d'union...)
+const NOT_IN_ADVANCED = new Set(["ASTEROIDE", "SAMOURAI", "OEUF", "OEIL", "SOUSMARIN", "WEEKEND"]);
+
+// Mots en plus, avec É ou È
+const ADVANCED_EXTRA = [
+    "ÉCOLIER", "ÉCURIE", "ÉPAULE", "ÉPINE", "ÉPOQUE", "ÉQUIPAGE", "ÉTOFFE", "ÉTUDE", "ÉVASION", "ÉLAN",
+    "ÉTÉ", "ÉTAPE", "ÉTINCELLE", "ÉVÉNEMENT", "ÉMOTION", "ÉPISODE", "ÉPREUVE", "ÉLÈVE", "ÉLÉGANT", "ÉNERGIE",
+    "BÉBÉ", "CAFÉ", "CLÉ", "DÉ", "BLÉ", "PRÉ", "NÉ", "THÉ", "FÉE", "ÉPI", "RÉ",
+    "DÉPART", "DÉFI", "DÉLICE", "DÉSORDRE", "DÉTECTIVE", "DÉTOUR", "DÉCOR", "DÉGÂT", "DÉMON", "DÉTAIL",
+    "MÉDECIN", "MÉLODIE", "MÉMOIRE", "MÉTAL", "MÉCANIQUE", "MÉTIER", "MÉNAGE", "MÉCHANT",
+    "RÉCOLTE", "RÉGION", "RÉPONSE", "RÉVEIL", "RÉCIT", "RÉSEAU", "RÉSULTAT", "RÉCOMPENSE", "RÉGIME", "RÉPUBLIQUE",
+    "TÉLÉ", "TÉLÉCOMMANDE", "VÉRITÉ", "VÉHICULE", "VÉGÉTAL", "SÉCURITÉ", "SÉRIE", "SÉANCE", "SÉJOUR",
+    "PÉPITE", "PÉTALE", "PÉRIODE", "PÉDALE", "GÉNIE", "GÉOGRAPHIE", "GÉOMÉTRIE", "HÉLICE", "HÉRITAGE",
+    "CÉLÈBRE", "FIDÈLE", "MODÈLE", "PROBLÈME", "SYSTÈME", "THÈME", "POÈME", "CRÈME", "LÈVRE", "FLÈCHE",
+    "MÈRE", "PÈRE", "FRÈRE", "CHÈVRE", "LUMIÈRE", "SORCIÈRE", "SIÈCLE", "FIÈVRE", "PIÈCE", "COLÈRE",
+    "RIVIÈRE", "BARRIÈRE", "CARRIÈRE", "FRONTIÈRE", "MATIÈRE", "PREMIÈRE", "DERNIÈRE", "CUISINIÈRE", "THÉIÈRE",
+    "SECRÈTE", "COMPLÈTE", "ZÈBRE", "ESPÈCE", "PLANÈTE", "COMÈTE", "MYSTÈRE", "CRATÈRE", "ATMOSPHÈRE", "HÉMISPHÈRE",
+    "CAFÉ", "BÉBÉ", "DÉ", "BLÉ", "PRÉ", "ÂGE", "ÂME", "MÛR", "SÛR", "OÙ", "LÀ", "ÇA", "DÉJÀ", "VOILÀ", "HOLÀ",
+    "GÎTE", "CÔTE", "RÊVE", "FÊTE", "BÊTE", "PÔLE", "RÔLE", "ZÈLE", "GRÊLE", "CÔNE", "PÂTE", "PRÊT", "ZÉRO", "NÉON", "ÉPI",
+    "ÉLAN", "ÉCHO", "ÉCLAT", "ÉCUME", "ÉTANG", "ÉVEIL", "ÉPICE", "CRÈME", "LÈVRE", "POÈTE", "MÈRE", "PÈRE", "FRÈRE",
+    "FAÇADE", "GARÇON", "FRANÇAIS", "MAÇON", "REÇU", "HAMEÇON", "MÛRE", "BÛCHE", "CROÛTE", "AOÛT", "GOÛTER",
+    "DÎNER", "BOÎTE", "HUÎTRE", "CHAÎNE", "HÔPITAL", "DRÔLE", "BIENTÔT", "CONTRÔLE", "BÂTON", "CRÂNE", "THÉÂTRE",
+    "GRÂCE", "CHÈVRE", "LUMIÈRE", "SORCIÈRE", "SIÈCLE", "FIÈVRE", "PIÈCE", "ARRÊT", "HÊTRE", "CHÊNE", "COLÈRE",
+    "ÉGLISE", "ÉPONGE", "ÉCHELLE", "ÉTAGE", "ÉNORME", "MÉTÉO", "CINÉMA", "ÉCAILLE", "ÉQUATEUR", "HÉLICE",
+    "RÉACTEUR", "MOLÉCULE", "ÉLECTRON", "SYSTÈME", "PLANÉTAIRE", "MÉTÉORITE", "ÉCLAIREUR",
+    "RÉPARER", "DÉCOLLER", "PRÉPARER", "TÉLÉPORTER", "ÉCOUTER", "ÉTUDIER", "ÉVITER", "ACCÉLÉRER", "PROTÉGER", "CÉLÉBRER",
+    "FIDÈLE", "CÉLÈBRE", "SPÉCIAL", "PRÉCIS", "SÉRIEUX", "VÉRITÉ", "LIBERTÉ", "ÉGALITÉ", "SANTÉ", "BEAUTÉ", "AMITIÉ"
+];
+
+const wordListAdvanced = [...new Set(
+    wordList.filter(w => !NOT_IN_ADVANCED.has(w)).map(w => ACCENTED_SPELLING[w] || w).concat(ADVANCED_EXTRA)
+)].filter(w => ADVANCED_WORD_REGEX.test(w));
+
+// 🎚️ Difficulté choisie dans le menu : 'simple' (sans accents) ou 'avance' (avec accents)
+let difficulty = (() => {
+    try { return localStorage.getItem('typing_shooter_difficulty') === 'avance' ? 'avance' : 'simple'; }
+    catch (e) { return 'simple'; }
+})();
+const currentWordList = () => (difficulty === 'avance' ? wordListAdvanced : wordList);
+
+// Enlève les accents (en mode simple, taper "é" compte comme "E")
+const stripAccents = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '');
 
 let activeWords = [];
 let targetedWord = null; 
@@ -758,7 +829,8 @@ function applyLayout(mobile) {
 // ==========================================
 // 4 BIS. 🏆 TOP 3 DES MEILLEURS SCORES
 // ==========================================
-const LEADERBOARD_KEY = 'typing_shooter_top3';
+// Un classement par difficulté (le mode avancé est plus dur : ce ne serait pas équitable de mélanger)
+const leaderboardKey = () => (difficulty === 'avance' ? 'typing_shooter_top3_avance' : 'typing_shooter_top3');
 const LAST_NAME_KEY = 'typing_shooter_lastname';
 const LEADERBOARD_SIZE = 3;
 const leaderboardElement = document.getElementById('leaderboard');
@@ -783,13 +855,13 @@ function cleanName(raw) {
 
 function loadLeaderboard() {
     let list = [];
-    try { list = JSON.parse(readStore(LEADERBOARD_KEY)) || []; } catch (e) { list = []; }
+    try { list = JSON.parse(readStore(leaderboardKey())) || []; } catch (e) { list = []; }
     if (!Array.isArray(list)) list = [];
     list = list
         .filter(r => r && Number.isFinite(r.score) && r.score > 0)
         .map(r => ({ name: cleanName(r.name) || 'PILOTE', score: Math.floor(r.score), level: r.level || null }));
-    // Ancienne version du jeu : un seul record sans nom → on le garde
-    if (list.length === 0) {
+    // Ancienne version du jeu : un seul record sans nom → on le garde (dans le classement simple)
+    if (list.length === 0 && difficulty !== 'avance') {
         const old = parseInt(readStore('typing_shooter_highscore'), 10) || 0;
         if (old > 0) list.push({ name: 'PILOTE', score: old, level: null });
     }
@@ -798,8 +870,8 @@ function loadLeaderboard() {
 }
 
 function storeLeaderboard() {
-    writeStore(LEADERBOARD_KEY, JSON.stringify(leaderboard));
-    writeStore('typing_shooter_highscore', leaderboard.length ? leaderboard[0].score : 0); // compatibilité
+    writeStore(leaderboardKey(), JSON.stringify(leaderboard));
+    if (difficulty !== 'avance') writeStore('typing_shooter_highscore', leaderboard.length ? leaderboard[0].score : 0); // compatibilité
     highScore = leaderboard.length ? leaderboard[0].score : 0;
     if (highScoreElement) highScoreElement.innerText = highScore;
 }
@@ -822,21 +894,125 @@ function addToLeaderboard(s, lvl) {
     return entry;
 }
 
-// Affiche le tableau (avec la ligne "highlight" mise en valeur)
-function renderLeaderboard(highlight = null) {
+// ==========================================
+// 🌍 CLASSEMENT EN LIGNE (Supabase)
+// ==========================================
+// Clé "Publishable key" (sb_publishable_...) de Supabase → Project Settings → API Keys.
+// JAMAIS la "Secret key" (sb_secret_...) ici ! La clé publishable est faite pour être visible :
+// les règles de la base n'autorisent que la lecture et l'ajout de scores.
+// Tant qu'elle est vide, le jeu utilise seulement le classement de l'appareil.
+const ONLINE_URL = 'https://fzowmwwfamwdxffcaotd.supabase.co';
+const ONLINE_KEY = 'sb_publishable_-C_GItAIa49ouDdNgNhrAA_zRkKX33d';
+const onlineEnabled = () => ONLINE_KEY.length > 20;
+const onlineTop = { simple: null, avance: null }; // null = pas (encore) chargé → classement local
+const onlineRankElement = document.getElementById('online-rank');
+let boardHighlight = null; // score mis en valeur dans le tableau (celui qu'on vient de faire)
+
+function onlineFetch(path, options = {}) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 6000);
+    return fetch(`${ONLINE_URL}/rest/v1/${path}`, {
+        ...options,
+        signal: ctrl.signal,
+        headers: {
+            apikey: ONLINE_KEY,
+            // anciennes clés (JWT "eyJ...") : aussi dans Authorization ; nouvelles clés "sb_publishable_..." : apikey suffit
+            ...(ONLINE_KEY.startsWith('eyJ') ? { Authorization: 'Bearer ' + ONLINE_KEY } : {}),
+            'Content-Type': 'application/json',
+            ...(options.headers || {})
+        }
+    }).then(r => {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r;
+    }).finally(() => clearTimeout(timer));
+}
+
+// Télécharge le Top 3 mondial d'une difficulté
+async function refreshOnline(diff = difficulty) {
+    if (!onlineEnabled()) return;
+    try {
+        const r = await onlineFetch(`scores?select=name,score,level&difficulty=eq.${diff}&order=score.desc,created_at.asc&limit=${LEADERBOARD_SIZE}`);
+        const rows = await r.json();
+        onlineTop[diff] = rows.map(x => ({
+            name: cleanName(x.name) || 'PILOTE', score: Math.floor(x.score) || 0, level: x.level || null, difficulty: diff
+        }));
+        if (diff === difficulty) renderLeaderboard();
+    } catch (e) { /* hors ligne : on garde le classement de l'appareil */ }
+}
+
+// Compte les scores d'une difficulté (avec un filtre éventuel) sans les télécharger
+async function onlineCount(diff, filter = '') {
+    const r = await onlineFetch(`scores?select=id&difficulty=eq.${diff}${filter}`, {
+        method: 'HEAD', headers: { Prefer: 'count=exact' }
+    });
+    const range = r.headers.get('content-range') || '';
+    return parseInt(range.split('/')[1], 10) || 0;
+}
+
+function showRankText(text) {
+    if (!onlineRankElement) return;
+    onlineRankElement.innerText = text || '';
+    onlineRankElement.classList.toggle('hidden', !text);
+}
+
+// Envoie un score validé, puis affiche la place du joueur
+async function submitOnline(entry) {
+    if (!onlineEnabled() || !entry || entry.score <= 0) return;
+    showRankText('🌍 Envoi du score…');
+    try {
+        await onlineFetch('scores', {
+            method: 'POST',
+            headers: { Prefer: 'return=minimal' },
+            body: JSON.stringify({ name: entry.name, score: entry.score, level: entry.level, difficulty: entry.difficulty })
+        });
+        await refreshOnline(entry.difficulty);
+        const [better, total] = await Promise.all([
+            onlineCount(entry.difficulty, `&score=gt.${entry.score}`),
+            onlineCount(entry.difficulty)
+        ]);
+        if (boardHighlight !== entry) return; // le joueur est déjà passé à autre chose
+        const rank = better + 1;
+        showRankText(`🌍 Classement mondial : ${rank === 1 ? '1er' : rank + 'e'} sur ${total} partie${total > 1 ? 's' : ''}`);
+    } catch (e) {
+        if (boardHighlight === entry) showRankText('⚠️ Score non envoyé en ligne (pas de connexion)');
+    }
+}
+
+// Liste affichée : le Top 3 mondial s'il est chargé, sinon celui de l'appareil.
+// Le score qu'on vient de faire y est inséré (pour le voir tout de suite à sa place).
+function displayedList() {
+    const online = onlineTop[difficulty];
+    const list = (online || leaderboard).slice();
+    const h = boardHighlight;
+    if (h && h.difficulty === difficulty && !list.some(r => sameEntry(r, h))) {
+        let i = list.findIndex(r => h.score > r.score);
+        if (i === -1) i = list.length;
+        list.splice(i, 0, h);
+    }
+    return list.slice(0, LEADERBOARD_SIZE);
+}
+const sameEntry = (a, b) => a === b || (a && b && a.name === b.name && a.score === b.score && (a.level || null) === (b.level || null));
+
+// Affiche le tableau (avec la ligne du dernier score mise en valeur)
+function renderLeaderboard() {
     if (!leaderboardElement) return;
     const medals = ['🥇', '🥈', '🥉'];
+    const list = displayedList();
     leaderboardElement.innerHTML = '';
 
     const title = document.createElement('div');
     title.className = 'lb-title';
-    title.innerText = '🏆 MEILLEURS PILOTES';
+    const diffName = difficulty === 'avance' ? 'AVANCÉ' : 'SIMPLE';
+    title.innerText = onlineTop[difficulty] ? `🌍 TOP 3 MONDIAL · ${diffName}` : `🏆 MEILLEURS PILOTES · ${diffName}`;
     leaderboardElement.appendChild(title);
 
+    let highlightDone = false;
     for (let i = 0; i < LEADERBOARD_SIZE; i++) {
-        const r = leaderboard[i];
+        const r = list[i];
+        const isNew = !highlightDone && r && boardHighlight && sameEntry(r, boardHighlight);
+        if (isNew) highlightDone = true;
         const row = document.createElement('div');
-        row.className = 'lb-row rank-' + (i + 1) + (r ? '' : ' empty') + (r && r === highlight ? ' is-new' : '');
+        row.className = 'lb-row rank-' + (i + 1) + (r ? '' : ' empty') + (isNew ? ' is-new' : '');
 
         const medal = document.createElement('span');
         medal.className = 'lb-medal';
@@ -865,6 +1041,11 @@ function showNameEntry(entry) {
     if (!nameEntryForm) return;
     nameEntryForm.classList.toggle('hidden', !entry);
     if (!entry || !nameInput) return;
+    const entryTitle = nameEntryForm.querySelector('.name-entry-title');
+    if (entryTitle) {
+        const inTop = displayedList().includes(entry);
+        entryTitle.innerText = inTop ? '🏆 TU ENTRES DANS LE TOP 3 !' : '🚀 ENREGISTRE TON SCORE EN LIGNE';
+    }
     nameInput.value = cleanName(readStore(LAST_NAME_KEY));
     nameInput.dispatchEvent(new Event('input'));
     // Sur PC on peut écrire directement ; sur tactile on laisse le joueur toucher le champ
@@ -888,10 +1069,13 @@ function confirmName(withSound = true) {
     const name = cleanName(nameInput ? nameInput.value : '') || 'PILOTE';
     pendingEntry.name = name;
     writeStore(LAST_NAME_KEY, name);
-    storeLeaderboard();
     const saved = pendingEntry;
+    // Classement de l'appareil (si le score y est entré) : on l'enregistre dans sa difficulté
+    if (leaderboard.includes(saved)) storeLeaderboard();
     showNameEntry(null);
-    renderLeaderboard(saved);
+    boardHighlight = saved;
+    renderLeaderboard();
+    submitOnline(saved); // 🌍 en arrière-plan
     if (withSound) playComboSound(3);
 }
 
@@ -903,12 +1087,50 @@ if (nameEntryForm) nameEntryForm.addEventListener('submit', (e) => {
 leaderboard = loadLeaderboard();
 storeLeaderboard();
 renderLeaderboard();
+refreshOnline();
+
+// ==========================================
+// 4 TER. 🎚️ CHOIX DE LA DIFFICULTÉ (SIMPLE / AVANCÉ)
+// ==========================================
+const difficultyButtons = document.querySelectorAll('.diff-btn');
+
+function setDifficulty(diff) {
+    if (diff !== 'simple' && diff !== 'avance') return;
+    if (isPlaying) return; // on ne change pas en pleine partie
+    if (diff !== difficulty) {
+        confirmName(false); // un score en attente de nom va dans le classement de l'ancienne difficulté
+        difficulty = diff;
+        writeStore('typing_shooter_difficulty', diff);
+        leaderboard = loadLeaderboard();
+        storeLeaderboard();
+        showRankText('');
+        renderLeaderboard();
+        refreshOnline();
+    }
+    difficultyButtons.forEach(b => {
+        const on = b.dataset.diff === difficulty;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+    document.body.classList.toggle('diff-avance', difficulty === 'avance');
+}
+
+difficultyButtons.forEach(b => b.addEventListener('click', () => {
+    b.blur();
+    setDifficulty(b.dataset.diff);
+}));
+// 📱 Sur téléphone / tablette : toujours le mode SIMPLE (pas d'accents à taper sur le clavier à l'écran)
+const difficultyBox = document.getElementById('difficulty');
+if (difficultyBox && isTouchDevice) difficultyBox.style.display = 'none';
+setDifficulty(isTouchDevice ? 'simple' : difficulty);
 
 function startGame(mode) {
     if (mode === 'clavier' || mode === 'mobile') gameMode = mode;
     if (isTouchDevice) gameMode = 'mobile'; // sécurité : jamais de mode sans clavier à l'écran sur tactile
     // Si le joueur relance sans valider son nom, on l'enregistre tel qu'il est écrit
     confirmName(false);
+    // Le mode mobile (clavier à l'écran) se joue toujours en SIMPLE
+    if (gameMode === 'mobile' && difficulty !== 'simple') setDifficulty('simple');
     updateMenuButtons();
     applyLayout(gameMode === 'mobile');
 
@@ -986,8 +1208,16 @@ function triggerGameOver() {
     stopMusic();
     playGameOverSound();
 
-    const entry = addToLeaderboard(score, level);
+    // Classement de l'appareil (entrée créée seulement si le score y a sa place)
+    let entry = addToLeaderboard(score, level);
     const newRecord = entry !== null && leaderboard[0] === entry;
+    // En ligne, toutes les parties sont enregistrées (pour connaître sa place mondiale)
+    if (!entry && onlineEnabled() && score > 0) {
+        entry = { name: cleanName(readStore(LAST_NAME_KEY)) || 'PILOTE', score: score, level: level };
+    }
+    if (entry) entry.difficulty = difficulty;
+    boardHighlight = entry;
+    showRankText('');
 
     if (screenTitle) screenTitle.innerText = "GAME OVER";
     if (screenStats) screenStats.innerHTML = `
@@ -997,7 +1227,7 @@ function triggerGameOver() {
             <div class="stat"><div class="stat-label">RECORD</div><div class="stat-value">${highScore}</div></div>
         </div>
         ${newRecord ? '<div class="new-record">★ NOUVEAU RECORD ★</div>' : ''}`;
-    renderLeaderboard(entry);
+    renderLeaderboard();
     showNameEntry(entry);
     if (restartBtn) restartBtn.innerText = "REJOUER";
     if (gameOverScreen) {
@@ -1040,12 +1270,13 @@ function spawnWord() {
     if (activeWords.length >= settings.maxWordsOnScreen) return;
 
     let filteredList = [];
-    if (level === 1) filteredList = wordList.filter(word => word.length <= 4);
-    else if (level === 2) filteredList = wordList.filter(word => word.length <= 5);
-    else if (level === 3) filteredList = wordList.filter(word => word.length <= 6);
-    else filteredList = wordList;
+    const dict = currentWordList();
+    if (level === 1) filteredList = dict.filter(word => word.length <= 4);
+    else if (level === 2) filteredList = dict.filter(word => word.length <= 5);
+    else if (level === 3) filteredList = dict.filter(word => word.length <= 6);
+    else filteredList = dict;
 
-    if (filteredList.length === 0) filteredList = wordList;
+    if (filteredList.length === 0) filteredList = dict;
 
     // 🎯 Jamais deux mots à l'écran qui commencent par la même lettre :
     // la première lettre tapée désigne toujours un seul mot.
@@ -1234,8 +1465,12 @@ function refreshTargetableHelpers() {
 // ==========================================
 // Clavier physique
 window.addEventListener('keydown', (e) => {
+    // (les accents ^ et ¨ sont des "touches mortes" : la lettre accentuée arrive à la touche suivante, ex. "ê")
     if (!isPlaying || isPaused || e.key.length !== 1) return;
-    handleLetter(e.key.toUpperCase());
+    let key = e.key.toUpperCase();
+    // mode simple : é = E · mode avancé : seuls É et È comptent comme accents (ê = E, à = A...)
+    if (difficulty !== 'avance' || !ACCENT_KEYS.includes(key)) key = stripAccents(key);
+    handleLetter(key);
 });
 
 // Traite une lettre tapée (clavier physique OU clavier virtuel).
@@ -1433,7 +1668,10 @@ function quitToMenu() {
     if (screenStats) screenStats.innerHTML = initialStats;
     if (restartBtn) restartBtn.innerText = 'COMMENCER';
     showNameEntry(null);
+    boardHighlight = null;
+    showRankText('');
     renderLeaderboard();
+    refreshOnline();
     if (gameOverScreen) {
         gameOverScreen.classList.remove('is-game-over');
         gameOverScreen.classList.remove('hidden');
