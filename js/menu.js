@@ -55,7 +55,9 @@ function typeDescription() {
         }
         case 'dictee':
             return canSpeak
-                ? '🗣️ Écoute le mot et tape-le : seule la 1re lettre est affichée. Une erreur ? Le mot est répété.'
+                ? (isTouchDevice
+                    ? '🗣️ Écoute le nom et tape-le. L\'icône donne un indice (🐾 animal, 🍕 nourriture…). Bouton 🔊 pour réécouter.'
+                    : '🗣️ Écoute le nom et tape-le. L\'icône donne un indice (🐾 animal, 🍕 nourriture…). Touche Espace ou 🔊 pour réécouter.')
                 : '🗣️ La voix n\'est pas disponible sur cet appareil : la dictée ne fonctionnera pas.';
         default:
             return wordTheme === 'tous'

@@ -265,13 +265,15 @@ function spawnWord(forceType = null) {
     element.style.top = '0px';
     if (info.glow) element.style.textShadow = `0 0 10px ${info.glow}`;
 
-    let htmlContent = info.icon ? `<span class="word-icon" aria-hidden="true">${info.icon}</span>` : '';
+    // Dictée : l'icône du thème du mot sert d'indice (🐾 animal, 🍕 nourriture...)
+    const icon = gameType === 'dictee' && wordType === 'NORMAL' ? themeIcon(themeOfWord(text)) : info.icon;
+    let htmlContent = icon ? `<span class="word-icon" aria-hidden="true">${icon}</span>` : '';
     for (let i = 0; i < text.length; i++) {
         const helperClass = (i === 0 && !targetedWord) ? "targetable" : "";
         const extraColor = info.color ? `color: ${info.color};` : '';
         // Dictée : seule la 1re lettre est visible, les autres apparaissent quand on les tape
-        const shown = gameType === 'dictee' && i > 0 ? '_' : text[i];
-        htmlContent += `<span class="letter ${helperClass}" data-i="${i}" style="${extraColor}">${shown}</span>`;
+        const hidden = gameType === 'dictee' && i > 0;
+        htmlContent += `<span class="letter ${helperClass}" data-i="${i}"${hidden ? ' data-blank="1"' : ''} style="${extraColor}">${hidden ? '' : text[i]}</span>`;
     }
     if (wordType === 'BOSS') htmlContent += '<div class="boss-bar"><div class="boss-fill"></div></div>';
     element.innerHTML = htmlContent;

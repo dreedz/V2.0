@@ -10,15 +10,45 @@
 window.addEventListener('keydown', (e) => {
     // (les accents ^ et ¨ sont des "touches mortes" : la lettre accentuée arrive à la touche suivante, ex. "ê")
     if (!isPlaying || isPaused || e.key.length !== 1) return;
+    // Espace : réécouter le mot (dictée). Jamais compté comme une erreur.
+    if (e.key === ' ') {
+        e.preventDefault();
+        if (gameType === 'dictee') repeatDictation();
+        return;
+    }
     let key = e.key.toUpperCase();
     // mode simple : é = E · mode avancé : seuls É et È comptent comme accents (ê = E, à = A...)
     if (effectiveDifficulty() !== 'avance' || !ACCENT_KEYS.includes(key)) key = stripAccents(key);
     handleLetter(key);
 });
 
+// 🔊 Dictée : répète le mot en cours (celui qu'on tape, sinon celui qui est le plus près du bouclier)
+function repeatDictation() {
+    if (!isPlaying || isPaused || gameType !== 'dictee') return;
+    const word = targetedWord && activeWords.includes(targetedWord)
+        ? targetedWord
+        : activeWords.reduce((low, w) => (!low || w.posY > low.posY ? w : low), null);
+    if (!word) return;
+    speakWord(word.text, true);
+    if (word.element) { // petit flash sur le mot répété
+        word.element.classList.remove('repeat-flash');
+        void word.element.offsetWidth;
+        word.element.classList.add('repeat-flash');
+    }
+}
+const repeatBtn = document.getElementById('repeat-btn');
+if (repeatBtn) {
+    // pointerdown : réagit tout de suite sur tactile, sans voler le focus du clavier
+    repeatBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); repeatDictation(); });
+    repeatBtn.addEventListener('click', (e) => { e.preventDefault(); repeatBtn.blur(); });
+}
+
 // Dictée : la lettre tapée apparaît à la place du "_"
 function revealLetter(letterElement, word, index) {
-    if (gameType === 'dictee' && letterElement) letterElement.textContent = word.text[index];
+    if (gameType === 'dictee' && letterElement) {
+        letterElement.textContent = word.text[index];
+        letterElement.removeAttribute('data-blank');
+    }
 }
 
 // Traite une lettre tapée (clavier physique OU clavier virtuel).
@@ -112,7 +142,7 @@ function handleLetter(keyPressed, auto = false) {
     else {
         stats.wrong++;
         recordLetter(expectedBefore, false);
-        if (gameType === 'dictee' && targetedWord) speakWord(targetedWord.text); // on réécoute le mot
+        if (gameType === 'dictee' && targetedWord) speakWord(targetedWord.text, true); // on réécoute le mot
     }
 
     // --- GESTION DU MULTIPLICATEUR DE COMBO ---

@@ -205,7 +205,40 @@ let wordTheme = (() => {
 // Le défi du jour se joue toujours avec tous les mots, en mode simple (pour que tout le monde ait les mêmes)
 const effectiveDifficulty = () => (gameType === 'defi' ? 'simple' : difficulty);
 const effectiveTheme = () => (gameType === 'defi' ? 'tous' : wordTheme);
-const currentWordList = () => themeWords(effectiveTheme(), effectiveDifficulty());
+
+// ==========================================
+// 🗣️ MOTS DE LA DICTÉE
+// ==========================================
+// Thème de chaque mot (pour afficher un indice : 🐾, 🍕, 🚀...)
+const THEME_OF_WORD = {};
+Object.entries(WORD_THEMES).forEach(([theme, list]) => list.forEach(w => { if (!THEME_OF_WORD[w]) THEME_OF_WORD[w] = theme; }));
+const themeOfWord = (w) => THEME_OF_WORD[w] || THEME_OF_WORD[stripAccentsWord(w)] || null;
+const themeIcon = (theme) => (theme && THEME_LABELS[theme] ? THEME_LABELS[theme].split(' ')[0] : '');
+function stripAccentsWord(w) { return w.normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+
+// Mots qui se prononcent comme d'autres (impossible de savoir lequel écrire en l'entendant seul)
+const DICTATION_HOMOPHONES = new Set([
+    "COURS", "COURT", "VERRE", "VERT", "MER", "MERE", "PERE", "PAIN", "SEL", "PORT", "SAUT", "CERF", "VENT",
+    "MUR", "LIT", "NEZ", "LAIT", "RIZ", "THE", "ILE", "EAU", "OR", "COQ", "MAIN", "BAS", "HAUT", "FIN", "TOUR",
+    "BOIS", "FOIS", "VOIX", "TEMPS", "SANG", "CENT", "VIN", "PEAU", "POT", "AMI", "COU", "COUP", "BOUT", "MAIS",
+    "PATES", "FRITES", "CISEAUX", "ELEVE", "PECHE", "CHAMP", "CHANT", "BALLE", "BAL", "LAC", "ROUE", "SOL",
+    "PLUTON", "MARS", "SIRIUS", "QUIZ", "WIFI", "MATCH", "DE", "RE", "NE", "DÉ", "RÉ", "NÉ", "LÀ", "OÙ", "ÇA"
+]);
+// Bon mot pour la dictée : un nom (pas de verbe ni d'adjectif), assez long, sans homophone connu
+function isDictationWord(w) {
+    const theme = themeOfWord(w);
+    // (sans thème = mots ajoutés du mode avancé, mélange de verbes et d'adjectifs : on les écarte)
+    if (!theme || theme === 'verbes' || theme === 'adjectifs') return false;
+    if (w.length < 3) return false;
+    return !DICTATION_HOMOPHONES.has(w) && !DICTATION_HOMOPHONES.has(stripAccentsWord(w));
+}
+
+function currentWordList() {
+    const list = themeWords(effectiveTheme(), effectiveDifficulty());
+    if (gameType !== 'dictee') return list;
+    const nouns = list.filter(isDictationWord);
+    return nouns.length >= 20 ? nouns : list; // (thème "Verbes" choisi : on garde ses mots quand même)
+}
 
 // Enlève les accents (en mode simple, taper "é" compte comme "E")
 const stripAccents = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '');

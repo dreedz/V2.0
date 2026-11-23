@@ -256,16 +256,18 @@ function getDifficultySettings() {
 
 // 🗣️ Voix de synthèse du navigateur (mode dictée) : prononce un mot en français
 const canSpeak = 'speechSynthesis' in window;
-function speakWord(text) {
+// interrupt = true : coupe ce qui est en train d'être dit (bouton RÉPÉTER) ;
+// sinon le mot attend son tour (deux mots qui apparaissent ensemble sont dits l'un après l'autre)
+function speakWord(text, interrupt = false) {
     if (!canSpeak) return; // (la dictée parle même si les EFFETS sont coupés : c'est indispensable)
     try {
         const spoken = (ACCENTED_SPELLING[text] || text).toLowerCase();
         const u = new SpeechSynthesisUtterance(spoken);
         u.lang = 'fr-FR';
-        u.rate = 0.85;
+        u.rate = 0.75; // un peu lent, pour bien entendre
         const fr = speechSynthesis.getVoices().find(v => /^fr/i.test(v.lang));
         if (fr) u.voice = fr;
-        speechSynthesis.cancel();
+        if (interrupt) speechSynthesis.cancel();
         speechSynthesis.speak(u);
     } catch (e) { /* voix indisponible */ }
 }
