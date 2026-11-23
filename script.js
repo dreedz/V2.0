@@ -1034,11 +1034,19 @@ function renderLeaderboard() {
     const list = displayedList();
     leaderboardElement.innerHTML = '';
 
+    // Intitulé de section + sous-titre (mondial / appareil, difficulté)
     const title = document.createElement('div');
-    title.className = 'lb-title';
-    const diffName = difficulty === 'avance' ? 'AVANCÉ' : 'SIMPLE';
-    title.innerText = onlineTop[difficulty] ? `🌍 TOP 3 MONDIAL · ${diffName}` : `🏆 MEILLEURS PILOTES · ${diffName}`;
+    title.className = 'section-title gold';
+    const titleText = document.createElement('span');
+    titleText.innerText = 'CLASSEMENT';
+    title.appendChild(titleText);
     leaderboardElement.appendChild(title);
+
+    const sub = document.createElement('div');
+    sub.className = 'lb-title';
+    const diffName = difficulty === 'avance' ? 'AVANCÉ' : 'SIMPLE';
+    sub.innerText = onlineTop[difficulty] ? `🌍 Top 3 mondial · ${diffName}` : `🏆 Top 3 de cet appareil · ${diffName}`;
+    leaderboardElement.appendChild(sub);
 
     let highlightDone = false;
     for (let i = 0; i < LEADERBOARD_SIZE; i++) {
@@ -1167,7 +1175,7 @@ const DONATE_URL = 'https://paypal.me/wordshooter';
 })();
 
 // 📱 Sur téléphone / tablette : toujours le mode SIMPLE (pas d'accents à taper sur le clavier à l'écran)
-const difficultyBox = document.getElementById('difficulty');
+const difficultyBox = document.getElementById('difficulty-section'); // intitulé + boutons
 if (difficultyBox && isTouchDevice) difficultyBox.style.display = 'none';
 setDifficulty(isTouchDevice ? 'simple' : difficulty);
 

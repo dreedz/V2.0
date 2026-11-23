@@ -778,20 +778,45 @@ h1 {
    ========================================== */
 .leaderboard {
     margin: 0 auto 22px;
-    max-width: 400px;
     text-align: left;
 }
+.leaderboard .lb-row { max-width: 400px; margin-left: auto; margin-right: auto; box-sizing: border-box; }
 .is-game-over .leaderboard { margin-top: 18px; }
 .lb-title {
-    margin-bottom: 8px;
-    font-family: var(--font-ui);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 4px;
+    margin: -4px 0 8px;
+    font-family: var(--font-words);
+    font-size: 12px;
+    letter-spacing: 1px;
     text-align: center;
-    color: var(--gold);
-    text-shadow: 0 0 10px rgba(234, 179, 8, 0.55);
+    color: var(--text-dim);
 }
+
+/* Intitulés de section du menu : ── RÈGLES ── */
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 4px 0 12px;
+    font-family: var(--font-ui);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 5px;
+    color: var(--cyan);
+    text-shadow: 0 0 10px rgba(34, 211, 238, 0.6);
+}
+.section-title::before,
+.section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.55));
+}
+.section-title::after { background: linear-gradient(90deg, rgba(34, 211, 238, 0.55), transparent); }
+.section-title span { padding-left: 5px; } /* compense l'espacement des lettres */
+.section-title.gold { color: var(--gold); text-shadow: 0 0 10px rgba(234, 179, 8, 0.55); }
+.section-title.gold::before { background: linear-gradient(90deg, transparent, rgba(234, 179, 8, 0.55)); }
+.section-title.gold::after  { background: linear-gradient(90deg, rgba(234, 179, 8, 0.55), transparent); }
+.is-game-over .how-to-title { display: none; }
 .lb-row {
     display: grid;
     grid-template-columns: 30px 1fr auto auto;
