@@ -197,6 +197,7 @@ let spawnTimer = 0;
 let score = 0;
 let level = 1;
 let wordsDestroyedInLevel = 0;
+let wordsDestroyedTotal = 0; // mots détruits dans la partie (vérifié par le serveur pour le classement en ligne)
 let highScore = 0; // = 1er du Top 3 (voir section 4 BIS)
 let isPlaying = false;
 let currentCombo = 0;
@@ -955,16 +956,49 @@ function showRankText(text) {
     onlineRankElement.classList.toggle('hidden', !text);
 }
 
-// Envoie un score validé, puis affiche la place du joueur
+// 🎫 Ticket de partie : demandé au serveur au début de chaque partie.
+// Le serveur note l'heure de départ ; à la fin, il vérifie que le score est possible
+// dans le temps écoulé (anti-triche). Un ticket ne sert qu'une fois.
+let onlineSession = null;
+async function startOnlineSession() {
+    onlineSession = null;
+    if (!onlineEnabled()) return;
+    const ticket = { id: null, difficulty };
+    onlineSession = ticket;
+    try {
+        const r = await onlineFetch('rpc/start_game', { method: 'POST', body: JSON.stringify({ p_difficulty: difficulty }) });
+        ticket.id = await r.json();
+    } catch (e) { /* hors ligne : la partie ne pourra pas être envoyée */ }
+}
+
+// Envoie un score validé (via la fonction de contrôle du serveur), puis affiche la place du joueur
 async function submitOnline(entry) {
     if (!onlineEnabled() || !entry || entry.score <= 0) return;
+    const sessionId = entry.ticket && entry.ticket.id;
+    if (!sessionId) {
+        showRankText('⚠️ Score non envoyé en ligne (pas de connexion au début de la partie)');
+        return;
+    }
     showRankText('🌍 Envoi du score…');
     try {
-        await onlineFetch('scores', {
-            method: 'POST',
-            headers: { Prefer: 'return=minimal' },
-            body: JSON.stringify({ name: entry.name, score: entry.score, level: entry.level, difficulty: entry.difficulty })
-        });
+        // Le serveur répond "ok" si le score est accepté, sinon la raison du refus
+        let verdict = 'refuse';
+        try {
+            const r = await onlineFetch('rpc/submit_score', {
+                method: 'POST',
+                body: JSON.stringify({
+                    p_session: sessionId, p_name: entry.name, p_score: entry.score,
+                    p_level: entry.level, p_words: entry.words
+                })
+            });
+            verdict = await r.json();
+        } catch (e) {
+            if (!/^HTTP 4/.test(e.message)) throw e; // problème de connexion
+        }
+        if (verdict !== 'ok') {
+            if (boardHighlight === entry) showRankText('⛔ Score refusé par le serveur');
+            return;
+        }
         await refreshOnline(entry.difficulty);
         const [better, total] = await Promise.all([
             onlineCount(entry.difficulty, `&score=gt.${entry.score}`),
@@ -1119,6 +1153,19 @@ difficultyButtons.forEach(b => b.addEventListener('click', () => {
     b.blur();
     setDifficulty(b.dataset.diff);
 }));
+// ==========================================
+// 💜 BOUTON DE DON (cadre sous le menu principal)
+// ==========================================
+// Ton lien PayPal, par exemple 'https://paypal.me/TonPseudo' ou 'https://www.paypal.com/donate/?hosted_button_id=XXXX'.
+// Tant qu'il est vide, le cadre n'est pas affiché.
+const DONATE_URL = 'https://paypal.me/wordshooter';
+(() => {
+    const ok = /^https:\/\/(www\.)?(paypal\.me|paypal\.com)\//i.test(DONATE_URL);
+    const btn = document.getElementById('donate-btn');
+    if (ok && btn) btn.href = DONATE_URL;
+    if (gameOverScreen) gameOverScreen.classList.toggle('has-donate', ok && !!btn);
+})();
+
 // 📱 Sur téléphone / tablette : toujours le mode SIMPLE (pas d'accents à taper sur le clavier à l'écran)
 const difficultyBox = document.getElementById('difficulty');
 if (difficultyBox && isTouchDevice) difficultyBox.style.display = 'none';
@@ -1131,6 +1178,7 @@ function startGame(mode) {
     confirmName(false);
     // Le mode mobile (clavier à l'écran) se joue toujours en SIMPLE
     if (gameMode === 'mobile' && difficulty !== 'simple') setDifficulty('simple');
+    startOnlineSession(); // 🎫 ticket de partie pour le classement en ligne (anti-triche)
     updateMenuButtons();
     applyLayout(gameMode === 'mobile');
 
@@ -1155,6 +1203,7 @@ function startGame(mode) {
     score = 0;
     level = 1;
     wordsDestroyedInLevel = 0;
+    wordsDestroyedTotal = 0;
     spawnTimer = 0;
 
     if (scoreElement) scoreElement.innerText = score;
@@ -1215,7 +1264,12 @@ function triggerGameOver() {
     if (!entry && onlineEnabled() && score > 0) {
         entry = { name: cleanName(readStore(LAST_NAME_KEY)) || 'PILOTE', score: score, level: level };
     }
-    if (entry) entry.difficulty = difficulty;
+    if (entry) {
+        entry.difficulty = difficulty;
+        entry.words = wordsDestroyedTotal;
+        entry.ticket = onlineSession && onlineSession.difficulty === difficulty ? onlineSession : null;
+    }
+    onlineSession = null; // un ticket = une seule partie
     boardHighlight = entry;
     showRankText('');
 
@@ -1249,7 +1303,7 @@ function triggerBonusBomb(bonusWord) {
         }
 
         score += 5 * scoreMultiplier;
-        wordsDestroyedInLevel++;
+        wordsDestroyedInLevel++; wordsDestroyedTotal++;
         if (w.element && container && container.contains(w.element)) container.removeChild(w.element);
     });
     
@@ -1409,7 +1463,7 @@ function updateGame() {
                             }
 
                             score += pointsGagnes * scoreMultiplier;
-                            wordsDestroyedInLevel++;
+                            wordsDestroyedInLevel++; wordsDestroyedTotal++;
                             if (scoreElement) scoreElement.innerText = score;
                             playExplosionSound();
                             

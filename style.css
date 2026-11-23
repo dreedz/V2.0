@@ -640,6 +640,86 @@ h1 {
 /* Si le menu est plus haut que l'écran, il défile sans que le haut soit coupé */
 .overlay > .menu-card { margin: auto; }
 
+/* Écran principal : le menu + le cadre "don" en dessous, centrés ensemble */
+/* (centrage par marges automatiques : si c'est trop haut, ça défile sans couper le haut) */
+#game-over-screen { flex-direction: column; justify-content: flex-start; }
+@media (max-width: 1099px) {
+    #game-over-screen.has-donate:not(.is-game-over) > .menu-card { margin-bottom: 0; }
+    /* place libre en bas pour ne pas passer sous les boutons VUE / MUSIQUE / EFFETS */
+    #game-over-screen.has-donate:not(.is-game-over) { padding-bottom: 64px; box-sizing: border-box; }
+}
+
+/* ==========================================
+   💜 CADRE DON (soutenir le projet)
+   ========================================== */
+.donate-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    width: calc(100% - 32px);
+    max-width: 580px;
+    margin: 14px auto auto;
+    padding: 12px 16px;
+    box-sizing: border-box;
+    background: linear-gradient(90deg, rgba(88, 28, 135, 0.35), rgba(10, 18, 38, 0.82));
+    border: 1px solid rgba(168, 85, 247, 0.45);
+    border-radius: 14px;
+    box-shadow: 0 0 24px rgba(168, 85, 247, 0.18);
+    backdrop-filter: blur(6px);
+    animation: card-in 0.6s ease-out;
+}
+#game-over-screen:not(.has-donate) .donate-card,
+#game-over-screen.is-game-over .donate-card { display: none; } /* seulement sur l'écran d'accueil */
+/* Grand écran : le cadre se range en bas à gauche (les boutons son sont en bas à droite) */
+@media (min-width: 1100px) {
+    .donate-card {
+        position: absolute;
+        left: 16px;
+        bottom: 16px;
+        width: 370px;
+        margin: 0;
+    }
+}
+.donate-text {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #cbd5e1;
+    text-align: left;
+}
+.donate-text b { color: #f0abfc; }
+.donate-heart { font-size: 24px; filter: drop-shadow(0 0 6px var(--purple)); }
+.donate-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 9px 16px;
+    font-family: var(--font-ui);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: #02040a;
+    text-decoration: none;
+    background: linear-gradient(90deg, #c084fc, #f0abfc);
+    border-radius: 10px;
+    box-shadow: 0 0 16px rgba(168, 85, 247, 0.5);
+    transition: transform 0.12s, box-shadow 0.12s;
+    -webkit-tap-highlight-color: transparent;
+}
+.donate-btn:hover { transform: translateY(-2px); box-shadow: 0 0 24px rgba(192, 132, 252, 0.8); }
+.donate-btn:active { transform: scale(0.96); }
+.donate-pp {
+    font-family: var(--font-words);
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    opacity: 0.75;
+}
+
 /* ==========================================
    🎚️ CHOIX DE LA DIFFICULTÉ
    ========================================== */
