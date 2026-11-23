@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Alpha Strike - Défense Spatiale</title>
+    <!-- 📱 Application installable (icône sur l'écran d'accueil, jeu hors connexion) -->
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#0b1026">
+    <link rel="icon" type="image/png" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-180.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Alpha Strike">
     <!-- Polices futuristes (si pas d'internet, le jeu utilise une police de secours) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,6 +43,8 @@
                 <div class="hud-label">SCORE</div>
                 <div class="hud-value" id="score">0</div>
                 <div class="hud-sub">RECORD <span id="high-score">0</span></div>
+                <!-- 🛡️ Vies du bouclier -->
+                <div id="lives" class="lives" title="Bouclier : un mot qui le touche retire une vie"></div>
             </div>
 
             <div class="hud-center-wrap">
@@ -61,6 +72,9 @@
                 <div class="progress small"><div class="progress-fill combo" id="combo-progress"></div></div>
             </div>
         </div>
+
+        <!-- ⚡ Bonus actifs (gel, ralenti, laser double) -->
+        <div id="power-hud" class="power-hud"></div>
 
         <!-- Bannière qui apparaît au passage de niveau -->
         <div id="level-banner"></div>
@@ -95,14 +109,26 @@
                 <div class="section-title how-to-title"><span>RÈGLES</span></div>
                 <div id="how-to" class="how-to">
                     <div class="how-item"><span class="keycap">A</span><span class="keycap">Z</span> Tape les lettres pour tirer</div>
-                    <div class="how-item"><span class="dot red"></span> Mots rouges : rapides, +20 pts</div>
-                    <div class="how-item"><span class="dot gold"></span> Mots dorés : bombe qui détruit tout</div>
+                    <div class="how-item"><span class="dot red"></span> ⚡ Mots rouges : rapides, +20 pts</div>
+                    <div class="how-item"><span class="dot gold"></span> 💣 Mots dorés : bombe qui détruit tout</div>
                     <div class="how-item"><span class="dot purple"></span> Sans erreur : combo jusqu'à x4</div>
+                    <div class="how-item">🛡️ Bouclier à 3 vies · 💣 doré = +1 vie</div>
+                    <div class="how-item">❄️ gel · ⏱️ ralenti · 🔫 laser double · 👾 boss tous les 5 niveaux</div>
                 </div>
 
                 <!-- 🎚️ Choix de la difficulté -->
-                <div id="difficulty-section">
+                <div id="mode-section">
                 <div class="section-title"><span>MODE DE JEU</span></div>
+                <div class="game-types" role="radiogroup" aria-label="Type de partie">
+                    <button type="button" class="type-btn" data-type="classique" role="radio"><span class="type-icon">🚀</span><span>CLASSIQUE</span></button>
+                    <button type="button" class="type-btn" data-type="defi" role="radio"><span class="type-icon">🎯</span><span>DÉFI DU JOUR</span></button>
+                    <button type="button" class="type-btn" data-type="entrainement" role="radio"><span class="type-icon">🎓</span><span>ENTRAÎNEMENT</span></button>
+                    <button type="button" class="type-btn" data-type="dictee" role="radio"><span class="type-icon">🗣️</span><span>DICTÉE</span></button>
+                </div>
+                <p id="type-desc" class="type-desc"></p>
+                <label id="theme-pick" class="theme-pick">THÈME DES MOTS
+                    <select id="theme-select" aria-label="Thème des mots"></select>
+                </label>
                 <div id="difficulty" class="difficulty" role="radiogroup" aria-label="Difficulté">
                     <button type="button" class="diff-btn" data-diff="simple" role="radio">
                         <span class="diff-name">SIMPLE</span>
@@ -131,6 +157,7 @@
 
                 <div class="menu-buttons">
                     <button id="restart-btn" class="primary-btn">COMMENCER</button>
+                    <button id="share-btn" class="secondary-btn share-btn" type="button">📤 PARTAGER</button>
                     <button id="mode-btn" class="secondary-btn">📱 MODE MOBILE</button>
                 </div>
                 <p class="menu-hint" id="menu-hint">Mode clavier · ou appuie sur <span class="keycap">Entrée</span></p>
@@ -264,6 +291,18 @@
     </div>
 
     <!-- Liaison avec votre fichier JavaScript -->
-    <script>document.write('<script src="script.js?v=' + window.ASSET_V + '"><\/script>');</script>
+    <!-- Fichiers du jeu, chargés dans cet ordre (chacun peut utiliser ce que les précédents ont défini) -->
+    <script>
+        window.GAME_FILES = [
+            'js/words.js', 'js/config.js', 'js/voice.js', 'js/audio.js', 'js/effects.js',
+            'js/leaderboard.js', 'js/menu.js', 'js/game.js', 'js/input.js', 'js/pause.js',
+            'js/mobile.js', 'js/background.js'
+        ];
+        window.GAME_FILES.forEach(f => document.write('<script src="' + f + '?v=' + window.ASSET_V + '"><\/script>'));
+        // Service worker (jeu hors connexion) : seulement en ligne (http/https), pas en fichier local
+        if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+            window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+        }
+    </script>
 </body>
 </html>

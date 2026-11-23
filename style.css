@@ -1303,3 +1303,246 @@ body.mobile-mode.is-paused #virtual-keyboard {
     .vk-key { height: 40px; }
     body.mobile-mode #virtual-keyboard { gap: 4px; padding-top: 6px; }
 }
+
+/* ==========================================
+   🆕 NOUVEAUTÉS : vies, bonus, boss, modes de jeu, statistiques, partage
+   ========================================== */
+
+/* 🛡️ Vies du bouclier (dans le panneau SCORE) */
+.lives { display: flex; gap: 5px; margin-top: 6px; }
+.life {
+    width: 14px; height: 14px;
+    clip-path: polygon(50% 0, 100% 20%, 92% 70%, 50% 100%, 8% 70%, 0 20%); /* petit écusson */
+    background: rgba(148, 163, 184, 0.25);
+    transition: background 0.2s, box-shadow 0.2s;
+}
+.life.on { background: linear-gradient(180deg, #67e8f9, #0891b2); box-shadow: 0 0 8px var(--cyan); }
+body[data-lives="1"] .life.on { background: linear-gradient(180deg, #fda4af, #e11d48); animation: blink 0.8s infinite; }
+/* La ligne du bouclier change de couleur selon les vies restantes */
+body[data-lives="2"] #shield-line { filter: hue-rotate(-30deg) saturate(1.4); }
+body[data-lives="1"] #shield-line { filter: hue-rotate(-60deg) saturate(2); height: 3px; }
+#shield-line.hit { animation: shield-hit 0.5s ease-out; }
+@keyframes shield-hit {
+    0%   { height: 10px; box-shadow: 0 0 40px #f43f5e, 0 0 80px #f43f5e; background: #fda4af; }
+    100% { height: 2px; }
+}
+
+/* ⚡ Bonus actifs */
+.power-hud {
+    position: absolute;
+    top: 118px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 12;
+    display: flex;
+    gap: 8px;
+    pointer-events: none;
+}
+.power-chip {
+    padding: 4px 10px;
+    font-family: var(--font-ui);
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    color: #e0f2fe;
+    background: rgba(8, 47, 73, 0.75);
+    border: 1px solid rgba(103, 232, 249, 0.6);
+    border-radius: 20px;
+    box-shadow: 0 0 12px rgba(34, 211, 238, 0.4);
+    white-space: nowrap;
+}
+/* Gel : les mots deviennent bleu glacé */
+body.pw-freeze .word-container { filter: drop-shadow(0 0 6px #93c5fd) drop-shadow(0 0 2px #000) saturate(0.4) brightness(1.2); }
+body.pw-freeze #game-world::after,
+body.pw-slow #game-world::after {
+    content: '';
+    position: absolute; inset: 0;
+    pointer-events: none;
+    z-index: 1;
+}
+body.pw-freeze #game-world::after { box-shadow: inset 0 0 120px rgba(147, 197, 253, 0.35); }
+body.pw-slow #game-world::after { box-shadow: inset 0 0 100px rgba(6, 182, 212, 0.25); }
+
+/* Icônes des mots spéciaux (aident aussi à les reconnaître sans les couleurs) */
+.word-icon {
+    display: inline-block;
+    margin-right: 6px;
+    font-size: 0.75em;
+    letter-spacing: 0;
+    vertical-align: 0.1em;
+    filter: none;
+}
+
+/* 👾 Boss */
+.word-container.boss {
+    font-size: 34px;
+    padding: 10px 16px 18px;
+    background: radial-gradient(ellipse at center, rgba(134, 25, 143, 0.55), rgba(30, 10, 50, 0.2) 70%, transparent);
+    border: 1px solid rgba(217, 70, 239, 0.6);
+    border-radius: 16px;
+    box-shadow: 0 0 30px rgba(217, 70, 239, 0.45), inset 0 0 20px rgba(217, 70, 239, 0.25);
+    animation: boss-wobble 2.4s ease-in-out infinite;
+}
+@keyframes boss-wobble {
+    0%, 100% { margin-left: -14px; }
+    50%      { margin-left: 14px; }
+}
+.boss-bar {
+    position: absolute;
+    left: 12px; right: 12px; bottom: 6px;
+    height: 5px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.boss-fill {
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, #f43f5e, #d946ef);
+    box-shadow: 0 0 8px #d946ef;
+    transition: width 0.2s;
+}
+.banner-boss {
+    margin-top: 8px;
+    font-size: 0.32em;
+    letter-spacing: 4px;
+    color: #f0abfc;
+    text-shadow: 0 0 14px #d946ef;
+    animation: blink 0.5s infinite;
+}
+
+/* Textes flottants des nouveaux mots */
+.float-text.type-slow   { color: #a5f3fc; text-shadow: 0 0 12px #06b6d4, 0 0 2px #000; }
+.float-text.type-freeze { color: #dbeafe; text-shadow: 0 0 12px #60a5fa, 0 0 2px #000; }
+.float-text.type-double { color: #bbf7d0; text-shadow: 0 0 12px #22c55e, 0 0 2px #000; }
+.float-text.type-boss   { color: #f5d0fe; font-size: 34px; text-shadow: 0 0 18px #d946ef, 0 0 2px #000; }
+.float-text.shield-lost   { font-size: 16px; letter-spacing: 2px; color: #fda4af; text-shadow: 0 0 10px #e11d48, 0 0 2px #000; }
+.float-text.shield-repair { font-size: 22px; color: #a5f3fc; text-shadow: 0 0 12px var(--cyan), 0 0 2px #000; }
+
+/* 🎮 Types de partie */
+.game-types {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.type-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 9px 4px;
+    font-family: var(--font-ui);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, color 0.15s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+.type-btn:hover { border-color: rgba(34, 211, 238, 0.5); }
+.type-icon { font-size: 20px; }
+.type-btn.active {
+    color: var(--cyan);
+    background: rgba(34, 211, 238, 0.1);
+    border-color: var(--cyan);
+    box-shadow: 0 0 14px rgba(34, 211, 238, 0.35), inset 0 0 10px rgba(34, 211, 238, 0.1);
+}
+.type-desc {
+    min-height: 2.6em;
+    margin: 0 0 10px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #cbd5e1;
+}
+.theme-pick {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-family: var(--font-ui);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+}
+#theme-select {
+    padding: 7px 10px;
+    font-family: var(--font-words);
+    font-size: 14px;
+    color: #e2e8f0;
+    background: rgba(2, 6, 18, 0.8);
+    border: 1px solid rgba(34, 211, 238, 0.45);
+    border-radius: 8px;
+    outline: none;
+    cursor: pointer;
+}
+#theme-select:focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(34, 211, 238, 0.4); }
+#mode-section .difficulty { margin-bottom: 18px; }
+
+/* 🏆 Onglets du classement */
+.lb-tabs { display: flex; justify-content: center; gap: 6px; margin: -4px 0 8px; }
+.lb-tab {
+    padding: 4px 10px;
+    font-family: var(--font-ui);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    background: transparent;
+    border: 1px solid rgba(234, 179, 8, 0.25);
+    border-radius: 20px;
+    cursor: pointer;
+}
+.lb-tab.active { color: #fde047; border-color: rgba(234, 179, 8, 0.7); background: rgba(234, 179, 8, 0.1); }
+
+/* 📊 Statistiques de fin de partie */
+.stat-grid.four { grid-template-columns: repeat(4, 1fr); }
+.stat-value small { font-size: 0.55em; opacity: 0.7; }
+.weak-letters {
+    margin-top: 12px;
+    font-size: 13px;
+    color: #cbd5e1;
+}
+.weak-letters .keycap { font-size: 13px; padding: 2px 7px; }
+.weak-letters small { color: var(--text-dim); margin-right: 6px; }
+
+/* 📤 Partager : seulement à la fin d'une partie */
+.share-btn { display: none; }
+.is-game-over .share-btn { display: inline-block; }
+
+@media (max-width: 720px) {
+    .game-types { grid-template-columns: repeat(2, 1fr); }
+    .stat-grid.four { grid-template-columns: repeat(2, 1fr); }
+    .power-hud { top: 70px; }
+    .word-container.boss { font-size: 24px; padding: 8px 10px 14px; }
+    .life { width: 11px; height: 11px; }
+    .lives { margin-top: 4px; gap: 4px; }
+}
+
+/* Bonus actifs : en bas à gauche, au-dessus du bouclier (ne gêne pas l'arrivée des mots) */
+.power-hud {
+    top: auto;
+    left: 12px;
+    bottom: 96px;
+    transform: none;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+/* Game Over : score → nom → classement → REJOUER, puis le choix du mode en dessous */
+#game-over-screen .menu-card { display: flex; flex-direction: column; }
+.is-game-over #mode-section { order: 4; margin-top: 22px; }
+.is-game-over #game-credits { order: 5; }
+
+@media (max-width: 720px) {
+    .power-hud { bottom: 66px; left: 8px; }
+    body.mobile-mode .power-hud { left: 64px; } /* à côté du bouton clavier */
+}
+/* (en colonne, chaque bloc garde toute la largeur du menu) */
+#game-over-screen .menu-card > * { width: 100%; box-sizing: border-box; }
