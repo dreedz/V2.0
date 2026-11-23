@@ -182,6 +182,8 @@ updateMenuButtons();
 // Touches spéciales : Entrée (lancer / reprendre) et Échap (pause)
 window.addEventListener('keydown', (e) => {
     if (e.target && e.target.tagName === 'INPUT') return; // on est en train d'écrire son nom
+    // fenêtre "vaisseaux & badges" ou "compte" ouverte : Entrée ne lance pas la partie
+    if (document.querySelector('#profile-screen:not(.hidden), #account-screen:not(.hidden)')) return;
     if (e.key === 'Enter') {
         if (!isPlaying) {
             e.preventDefault(); // évite un double lancement si un bouton a le focus

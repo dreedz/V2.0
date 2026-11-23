@@ -817,7 +817,6 @@ h1 {
 .section-title.gold { color: var(--gold); text-shadow: 0 0 10px rgba(234, 179, 8, 0.55); }
 .section-title.gold::before { background: linear-gradient(90deg, transparent, rgba(234, 179, 8, 0.55)); }
 .section-title.gold::after  { background: linear-gradient(90deg, rgba(234, 179, 8, 0.55), transparent); }
-.is-game-over .how-to-title { display: none; }
 .lb-row {
     display: grid;
     grid-template-columns: 30px 1fr auto auto;
@@ -1535,10 +1534,8 @@ body.pw-slow #game-world::after { box-shadow: inset 0 0 100px rgba(6, 182, 212, 
     align-items: flex-start;
 }
 
-/* Game Over : score → nom → classement → REJOUER, puis le choix du mode en dessous */
+/* Menu principal / Game Over : en colonne (l'ordre des blocs change en fin de partie, voir "MENU EN MODULES") */
 #game-over-screen .menu-card { display: flex; flex-direction: column; }
-.is-game-over #mode-section { order: 4; margin-top: 22px; }
-.is-game-over #game-credits { order: 5; }
 
 @media (max-width: 720px) {
     .power-hud { bottom: 66px; left: 8px; }
@@ -1696,26 +1693,6 @@ body[data-sector="4"] #sector-tint {             /* 🌀 cœur de la galaxie */
 .letter.space-letter { width: 0.7em; text-align: center; opacity: 0.45; }
 .vk-key.vk-space { flex: 0 0 calc((100% - 45px) / 10 * 3 + 10px); max-width: 200px; font-size: 12px; letter-spacing: 2px; }
 
-/* 👨‍🚀 Bouton pilote (menu) */
-.pilot-btn {
-    display: block;
-    width: 100%;
-    max-width: 460px;
-    margin: -6px auto 18px;
-    padding: 9px 12px;
-    font-family: var(--font-words);
-    font-size: 13px;
-    color: #e2e8f0;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px dashed rgba(34, 211, 238, 0.4);
-    border-radius: 10px;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
-}
-.pilot-btn:hover { background: rgba(34, 211, 238, 0.08); border-color: var(--cyan); }
-.pilot-btn b { color: var(--cyan); }
-.pb-more { display: block; margin-top: 3px; font-family: var(--font-ui); font-size: 9px; letter-spacing: 2px; color: var(--cyan); }
-
 /* 🏅 Annonce de badge pendant la partie */
 .badge-toast {
     position: absolute;
@@ -1859,3 +1836,225 @@ body.dys-font .word-container.boss { font-size: 28px; }
 }
 /* Aperçus du profil : un petit halo de la même couleur que le vaisseau */
 .pf-ship-img svg { filter: drop-shadow(0 0 4px rgba(56, 189, 248, 0.7)); }
+
+/* ==========================================
+   🧩 MENU EN MODULES : carte pilote · MODE DE JEU · CLASSEMENT · RÈGLES
+   ========================================== */
+#game-over-screen > .menu-card { max-width: 1020px; }
+#game-over-screen .stats-summary { margin-bottom: 16px; }
+
+/* Le cadre de chaque module */
+.menu-modules { display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 20px; }
+.menu-side { display: contents; }
+.menu-module {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 14px 16px 16px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-radius: 14px;
+    box-shadow: inset 0 0 24px rgba(56, 189, 248, 0.04);
+}
+.module-board { border-color: rgba(234, 179, 8, 0.35); box-shadow: inset 0 0 24px rgba(234, 179, 8, 0.04); }
+.module-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 12px;
+    padding-bottom: 10px;
+    font-family: var(--font-ui);
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    color: var(--cyan);
+    text-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
+    border-bottom: 1px solid rgba(56, 189, 248, 0.18);
+}
+.module-title.gold { color: var(--gold); text-shadow: 0 0 10px rgba(234, 179, 8, 0.5); border-bottom-color: rgba(234, 179, 8, 0.22); }
+.mt-icon { font-size: 18px; letter-spacing: 0; text-shadow: none; }
+.module-label {
+    margin: 4px 0 8px;
+    text-align: left;
+    font-family: var(--font-ui);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+}
+#difficulty-block { margin-top: 4px; }
+#mode-section .difficulty { max-width: none; margin-bottom: 0; }
+.module-board .leaderboard { margin: 0; }
+.module-board .leaderboard .lb-row { max-width: none; }
+.module-board .name-entry { margin: 0 0 12px; max-width: none; }
+.module-board .online-rank { margin-top: 10px; }
+.module-rules .how-to { margin-bottom: 0; gap: 6px; }
+.module-rules .how-item { padding: 8px 10px; font-size: 13px; }
+
+/* Grand écran : MODE DE JEU | CLASSEMENT côte à côte, RÈGLES en dessous sur toute la largeur */
+@media (min-width: 900px) {
+    .menu-modules { grid-template-columns: 1.15fr 1fr; grid-template-areas: "mode board" "rules rules"; align-items: stretch; }
+    .module-mode { grid-area: mode; }
+    .module-board { grid-area: board; }
+    .module-rules { grid-area: rules; }
+    .module-rules .how-to { grid-template-columns: repeat(3, 1fr); }
+    .is-game-over .menu-modules { grid-template-columns: 1fr 1.15fr; grid-template-areas: "board mode"; }
+}
+
+/* Game Over : le score, le classement et REJOUER d'abord ; pas de règles */
+.is-game-over .module-rules { display: none; }
+.is-game-over #mode-section { order: 0; margin-top: 0; }
+.is-game-over .menu-modules { order: 1; }
+.is-game-over .menu-buttons { order: 2; }
+.is-game-over .menu-hint { order: 3; }
+.is-game-over .pilot-card { order: 4; margin: 18px 0 0; }
+.is-game-over #game-credits { order: 5; }
+@media (max-width: 899px) {
+    /* (sur téléphone : classement → REJOUER → choix du mode) */
+    .is-game-over .menu-modules { display: contents; }
+    .is-game-over .module-board { order: 1; margin-bottom: 18px; }
+    .is-game-over #mode-section { order: 4; margin-top: 18px; }
+    .is-game-over .pilot-card { order: 5; }
+    .is-game-over #game-credits { order: 6; }
+}
+
+/* 👨‍🚀 Carte du pilote */
+.pilot-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 0 0 14px;
+    padding: 12px 14px;
+    box-sizing: border-box;
+    text-align: left;
+    background: linear-gradient(90deg, rgba(34, 211, 238, 0.08), rgba(168, 85, 247, 0.07));
+    border: 1px solid rgba(34, 211, 238, 0.35);
+    border-radius: 14px;
+}
+.pc-ship { flex-shrink: 0; width: 44px; height: 55px; }
+.pc-ship svg { width: 100%; height: 100%; filter: drop-shadow(0 0 5px rgba(56, 189, 248, 0.7)); }
+.pc-info { flex: 1; min-width: 0; }
+.pc-name {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px;
+    font-family: var(--font-ui); font-size: 15px; font-weight: 900; letter-spacing: 2px; color: #ffffff;
+}
+.pc-tag {
+    padding: 2px 8px;
+    font-family: var(--font-words); font-size: 10px; font-weight: normal; letter-spacing: 0;
+    border-radius: 20px;
+}
+.pc-tag.ok   { color: #4ade80; background: rgba(74, 222, 128, 0.08); border: 1px solid rgba(74, 222, 128, 0.4); }
+.pc-tag.warn { color: #fbbf24; background: rgba(251, 191, 36, 0.08); border: 1px solid rgba(251, 191, 36, 0.4); }
+.pc-level { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 11px; color: var(--text-dim); }
+.pc-level b { font-family: var(--font-ui); font-size: 11px; letter-spacing: 2px; color: var(--cyan); white-space: nowrap; }
+.pc-bar { flex: 1; max-width: 200px; height: 6px; overflow: hidden; background: rgba(148, 163, 184, 0.2); border-radius: 3px; }
+.pc-bar span { display: block; height: 100%; background: linear-gradient(90deg, var(--cyan), var(--purple)); box-shadow: 0 0 6px var(--cyan); }
+.pc-xp { white-space: nowrap; }
+.pc-meta { margin-top: 4px; font-size: 12px; color: #cbd5e1; }
+.pc-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+.pc-btn {
+    padding: 9px 12px;
+    font-family: var(--font-ui); font-size: 10px; font-weight: 900; letter-spacing: 1.5px;
+    white-space: nowrap;
+    color: var(--cyan);
+    background: rgba(34, 211, 238, 0.06);
+    border: 1px solid rgba(34, 211, 238, 0.5);
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background 0.15s, box-shadow 0.15s;
+}
+.pc-btn:hover { background: rgba(34, 211, 238, 0.14); box-shadow: 0 0 12px rgba(34, 211, 238, 0.3); }
+.pc-btn.cloud { color: #02040a; background: linear-gradient(90deg, #c084fc, #22d3ee); border-color: transparent; box-shadow: 0 0 12px rgba(168, 85, 247, 0.4); }
+.pc-btn.cloud:hover { filter: brightness(1.1); }
+
+@media (max-width: 720px) {
+    .pilot-card { flex-wrap: wrap; padding: 10px 12px; gap: 10px 12px; }
+    .pc-actions { flex-direction: row; width: 100%; }
+    .pc-btn { flex: 1; white-space: normal; padding: 9px 6px; }
+    .menu-module { padding: 12px 12px 14px; }
+    .module-title { font-size: 13px; letter-spacing: 3px; }
+}
+
+/* Écrans "Vaisseaux & badges" et "Mon compte" */
+.overlay-back { display: block; margin: 22px auto 0; }
+#account-screen { z-index: 120; }
+.account-card { max-width: 500px; }
+.account-box { text-align: left; }
+.acc-lead { margin: 0 0 12px; font-size: 13px; line-height: 1.5; color: #cbd5e1; text-align: center; }
+.acc-perks { margin: 0 0 16px; padding: 0; list-style: none; font-size: 13px; line-height: 1.5; color: #cbd5e1; }
+.acc-perks li { margin: 6px 0; }
+.acc-perks.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.acc-perks.grid li {
+    margin: 0; padding: 7px 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 8px;
+}
+.acc-tabs { display: grid; grid-template-columns: 1fr 1fr; margin-bottom: 14px; border-bottom: 1px solid rgba(56, 189, 248, 0.25); }
+.acc-tab {
+    padding: 10px 6px;
+    font-family: var(--font-ui); font-size: 11px; font-weight: 900; letter-spacing: 1px;
+    color: var(--text-dim);
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+}
+.acc-tab.active { color: var(--cyan); border-bottom-color: var(--cyan); text-shadow: 0 0 10px rgba(34, 211, 238, 0.5); }
+.acc-form { display: flex; flex-direction: column; gap: 12px; }
+.acc-field {
+    display: flex; flex-direction: column; gap: 5px;
+    font-family: var(--font-ui); font-size: 10px; font-weight: 700; letter-spacing: 2px; color: var(--text-dim);
+}
+.acc-input {
+    min-width: 0;
+    padding: 11px 12px;
+    font-family: var(--font-ui);
+    font-size: 16px; /* ≥ 16px : évite le zoom automatique sur iPhone */
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #ffffff;
+    background: rgba(2, 6, 18, 0.7);
+    border: 1px solid rgba(34, 211, 238, 0.5);
+    border-radius: 10px;
+    outline: none;
+    caret-color: var(--cyan);
+    -webkit-user-select: text; /* indispensable sur iPhone pour pouvoir écrire */
+    user-select: text;
+}
+#acc-name { text-transform: uppercase; }
+.acc-input::placeholder { color: #475569; letter-spacing: 1px; font-size: 13px; text-transform: none; }
+.acc-input:focus { border-color: var(--cyan); box-shadow: 0 0 12px rgba(34, 211, 238, 0.4); }
+.acc-submit { margin-top: 4px; width: 100%; }
+.acc-note { margin: 0; font-size: 12px; line-height: 1.45; color: var(--text-dim); text-align: center; }
+.acc-note b { color: #fde047; }
+.acc-btn {
+    padding: 8px 12px;
+    font-family: var(--font-ui); font-size: 10px; font-weight: 900; letter-spacing: 1.5px;
+    color: var(--text-dim);
+    background: transparent;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    border-radius: 9px;
+    cursor: pointer;
+}
+.acc-btn:hover { color: #fda4af; border-color: #fda4af; }
+.account-box button:disabled { opacity: 0.5; cursor: wait; }
+.acc-logged {
+    display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 14px; align-items: center;
+    padding: 14px 16px;
+    background: rgba(34, 211, 238, 0.06);
+    border: 1px solid rgba(34, 211, 238, 0.35);
+    border-radius: 12px;
+}
+.acc-avatar { grid-row: span 2; font-size: 34px; }
+.acc-who { font-size: 12px; color: var(--text-dim); }
+.acc-who b { font-family: var(--font-ui); font-size: 20px; letter-spacing: 3px; color: #ffffff; }
+.acc-state { margin-top: 4px; font-size: 12px; color: var(--text-dim); }
+.acc-state.saved { color: #4ade80; }
+.acc-state.offline { color: #fbbf24; }
+.acc-actions { display: flex; flex-direction: column; align-items: center; gap: 12px; margin: 6px 0 10px; }
+.acc-done { width: 100%; }
+.acc-msg { margin-top: 10px; font-size: 13px; text-align: center; color: #fbbf24; }
+.acc-msg:empty { display: none; }
+.acc-msg.good { color: #4ade80; }
+@media (max-width: 480px) { .acc-perks.grid { grid-template-columns: 1fr; } }

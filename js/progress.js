@@ -38,9 +38,8 @@ const SHIPS = [
 ];
 
 // --- Lecture / écriture de la progression ---
-function loadProgress() {
-    let p = null;
-    try { p = JSON.parse(readStore(PROGRESS_KEY)); } catch (e) { p = null; }
+// Remet une progression (de l'appareil ou du compte en ligne) dans le bon format
+function normalizeProgress(p) {
     p = p && typeof p === 'object' ? p : {};
     return {
         xp: p.xp || 0,
@@ -51,8 +50,35 @@ function loadProgress() {
         ghosts: p.ghosts || {}
     };
 }
+function loadProgress() {
+    let p = null;
+    try { p = JSON.parse(readStore(PROGRESS_KEY)); } catch (e) { p = null; }
+    return normalizeProgress(p);
+}
 let progress = loadProgress();
-const saveProgress = () => writeStore(PROGRESS_KEY, JSON.stringify(progress));
+function saveProgress() {
+    writeStore(PROGRESS_KEY, JSON.stringify(progress));
+    if (typeof scheduleCloudSave === 'function') scheduleCloudSave(); // ☁️ compte en ligne (account.js)
+}
+
+// Fusionne deux progressions (celle de l'appareil et celle du compte) sans rien perdre :
+// on garde le meilleur de chaque (XP, badges, records...). "a" décide du vaisseau choisi.
+function mergeProgress(a, b) {
+    a = normalizeProgress(a); b = normalizeProgress(b);
+    const out = normalizeProgress({ xp: Math.max(a.xp, b.xp), ship: a.ship });
+    [a, b].forEach(p => {
+        Object.entries(p.badges).forEach(([id, day]) => {
+            if (!out.badges[id] || String(day) < String(out.badges[id])) out.badges[id] = day;
+        });
+        Object.entries(p.totals).forEach(([k, n]) => { out.totals[k] = Math.max(out.totals[k] || 0, n || 0); });
+        Object.entries(p.ghosts).forEach(([k, g]) => {
+            if (g && (!out.ghosts[k] || g.score > out.ghosts[k].score)) out.ghosts[k] = g;
+        });
+    });
+    const s = String(a.streak.last || '') >= String(b.streak.last || '') ? a.streak : b.streak;
+    out.streak = { last: s.last, count: s.count, best: Math.max(a.streak.best || 0, b.streak.best || 0, s.count || 0) };
+    return out;
+}
 
 // --- Niveau de pilote : niveau 2 = 100 XP, 3 = 300, 4 = 600, 5 = 1 000... ---
 const xpForLevel = (lvl) => 50 * (lvl - 1) * lvl;
@@ -225,17 +251,54 @@ function shipPreviewSvg(suffix) {
 // ==========================================
 // 👨‍🚀 ÉCRAN "PROFIL" (badges, vaisseaux, série)
 // ==========================================
-const pilotBtn = document.getElementById('pilot-btn');
+const pilotCard = document.getElementById('pilot-card');
 const profileScreen = document.getElementById('profile-screen');
 const profileContent = document.getElementById('profile-content');
 
+// Vaisseau choisi (en tenant compte du niveau)
+const currentShip = () => SHIPS.find(s => s.id === progress.ship && s.level <= pilotLevel()) || SHIPS[0];
+
+// 👨‍🚀 Carte du pilote (menu) : qui joue, niveau, badges, et accès au compte
 function refreshPilotSummary() {
-    if (!pilotBtn) return;
+    if (!pilotCard) return;
     const lvl = pilotLevel();
+    const from = xpForLevel(lvl), to = xpForLevel(lvl + 1);
+    const pct = Math.max(0, Math.min(100, Math.round(100 * (progress.xp - from) / (to - from))));
     const got = Object.keys(progress.badges).length;
     const streak = currentStreak();
-    pilotBtn.innerHTML = `👨‍🚀 Pilote niv. <b>${lvl}</b> · 🏅 ${got}/${BADGES.length}` + (streak ? ` · 🔥 ${streak} j` : '') + ' <span class="pb-more">▸ BADGES & VAISSEAUX</span>';
+    const acc = typeof account !== 'undefined' && account ? cleanName(account.name) : '';
+    const online = typeof onlineEnabled === 'function' && onlineEnabled();
+    const ship = currentShip();
+    const shipStyle = ship.filter !== 'rainbow' && ship.filter !== 'none' ? `filter:${ship.filter}` : '';
+    const cloud = typeof cloudState !== 'undefined' ? cloudState : '';
+    pilotCard.innerHTML = `
+        <div class="pc-ship${ship.filter === 'rainbow' ? ' ship-rainbow' : ''}" style="${shipStyle}">${shipPreviewSvg('pc')}</div>
+        <div class="pc-info">
+            <div class="pc-name">${acc || 'PILOTE INVITÉ'}
+                ${online ? (acc
+                    ? `<span class="pc-tag ${cloud === 'offline' ? 'warn' : 'ok'}">${cloud === 'offline' ? '⚠️ hors ligne' : '☁️ sauvegardé'}</span>`
+                    : '<span class="pc-tag warn">non sauvegardé</span>') : ''}
+            </div>
+            <div class="pc-level"><b>NIVEAU ${lvl}</b>
+                <span class="pc-bar"><span style="width:${pct}%"></span></span>
+                <span class="pc-xp">${progress.xp - from}/${to - from} XP</span>
+            </div>
+            <div class="pc-meta">🏅 ${got}/${BADGES.length} badges${streak ? ` · 🔥 ${streak} jour${streak > 1 ? 's' : ''} de suite` : ''}</div>
+        </div>
+        <div class="pc-actions">
+            <button type="button" class="pc-btn" data-open="profile">🎨 VAISSEAUX &amp; BADGES</button>
+            ${online ? (acc
+                ? '<button type="button" class="pc-btn" data-open="account">☁️ MON COMPTE</button>'
+                : '<button type="button" class="pc-btn cloud" data-open="account">☁️ SAUVEGARDER MA PROGRESSION</button>') : ''}
+        </div>`;
 }
+if (pilotCard) pilotCard.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-open]');
+    if (!btn) return;
+    btn.blur();
+    if (btn.dataset.open === 'profile') openProfile();
+    else if (typeof openAccount === 'function') openAccount();
+});
 
 function renderProfile() {
     if (!profileContent) return;
@@ -278,6 +341,7 @@ function renderProfile() {
         progress.ship = btn.dataset.ship;
         saveProgress();
         applyShip();
+        refreshPilotSummary();
         renderProfile();
     }));
 }
@@ -289,9 +353,9 @@ function openProfile() {
 }
 function closeProfile() { if (profileScreen) profileScreen.classList.add('hidden'); }
 
-if (pilotBtn) pilotBtn.addEventListener('click', () => { pilotBtn.blur(); openProfile(); });
 const profileClose = document.getElementById('profile-close');
 if (profileClose) profileClose.addEventListener('click', closeProfile);
+document.querySelectorAll('[data-close="profile"]').forEach(b => b.addEventListener('click', closeProfile));
 if (profileScreen) profileScreen.addEventListener('click', (e) => { if (e.target === profileScreen) closeProfile(); });
 window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && profileScreen && !profileScreen.classList.contains('hidden')) closeProfile();

@@ -31,6 +31,7 @@ function startGame(mode) {
     startOnlineSession(); // 🎫 ticket de partie pour le classement en ligne (anti-triche)
     document.body.dataset.gameType = gameType;
     closeProfile();
+    if (typeof closeAccount === 'function') closeAccount();
     buildVirtualKeyboard(); // (barre ESPACE en mode phrases)
     startRun();             // badges, fantôme du record
     applySector(1);

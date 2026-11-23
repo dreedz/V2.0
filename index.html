@@ -110,62 +110,75 @@
                 <h1 id="screen-title">ALPHA STRIKE</h1>
                 <div id="screen-stats" class="stats-summary">Détruis les mots avant qu'ils n'atteignent ton bouclier !</div>
 
-                <div class="section-title how-to-title"><span>RÈGLES</span></div>
-                <div id="how-to" class="how-to">
-                    <div class="how-item"><span class="keycap">A</span><span class="keycap">Z</span> Tape les lettres pour tirer</div>
-                    <div class="how-item"><span class="dot red"></span> ⚡ Mots rouges : rapides, +20 pts</div>
-                    <div class="how-item"><span class="dot gold"></span> 💣 Mots dorés : bombe qui détruit tout</div>
-                    <div class="how-item"><span class="dot purple"></span> Sans erreur : combo jusqu'à x4</div>
-                    <div class="how-item">🛡️ Bouclier à 3 vies · 💣 doré = +1 vie</div>
-                    <div class="how-item">❄️ gel · ⏱️ ralenti · 👾 boss tous les 5 niveaux</div>
-                </div>
+                <!-- 👨‍🚀 Carte du pilote : niveau, vaisseau, badges + compte (rempli par progress.js) -->
+                <div id="pilot-card" class="pilot-card"></div>
 
-                <!-- 🎚️ Choix de la difficulté -->
-                <div id="mode-section">
-                <div class="section-title"><span>MODE DE JEU</span></div>
-                <div class="game-types" role="radiogroup" aria-label="Type de partie">
-                    <button type="button" class="type-btn" data-type="classique" role="radio"><span class="type-icon">🚀</span><span>CLASSIQUE</span></button>
-                    <button type="button" class="type-btn" data-type="defi" role="radio"><span class="type-icon">🎯</span><span>DÉFI DU JOUR</span></button>
-                    <button type="button" class="type-btn" data-type="entrainement" role="radio"><span class="type-icon">🎓</span><span>ENTRAÎNEMENT</span></button>
-                    <button type="button" class="type-btn" data-type="dictee" role="radio"><span class="type-icon">🗣️</span><span>DICTÉE</span></button>
-                    <button type="button" class="type-btn" data-type="phrases" role="radio"><span class="type-icon">📝</span><span>PHRASES</span></button>
-                </div>
-                <p id="type-desc" class="type-desc"></p>
-                <label id="theme-pick" class="theme-pick">THÈME DES MOTS
-                    <select id="theme-select" aria-label="Thème des mots"></select>
-                </label>
-                <div id="difficulty" class="difficulty" role="radiogroup" aria-label="Difficulté">
-                    <button type="button" class="diff-btn" data-diff="baby" role="radio">
-                        <span class="diff-name">BABY</span>
-                        <span class="diff-desc">mots courts, très lents, 5 vies</span>
-                    </button>
-                    <button type="button" class="diff-btn" data-diff="simple" role="radio">
-                        <span class="diff-name">SIMPLE</span>
-                        <span class="diff-desc">mots sans accents</span>
-                    </button>
-                    <button type="button" class="diff-btn" data-diff="avance" role="radio">
-                        <span class="diff-name">AVANCÉ</span>
-                        <span class="diff-desc">avec les accents é et è</span>
-                    </button>
-                </div>
-                </div>
+                <div class="menu-modules">
+                    <!-- 🎮 MODULE : MODE DE JEU -->
+                    <section id="mode-section" class="menu-module module-mode">
+                        <h2 class="module-title"><span class="mt-icon">🎮</span>MODE DE JEU</h2>
+                        <div class="module-label">1 · Type de partie</div>
+                        <div class="game-types" role="radiogroup" aria-label="Type de partie">
+                            <button type="button" class="type-btn" data-type="classique" role="radio"><span class="type-icon">🚀</span><span>CLASSIQUE</span></button>
+                            <button type="button" class="type-btn" data-type="defi" role="radio"><span class="type-icon">🎯</span><span>DÉFI DU JOUR</span></button>
+                            <button type="button" class="type-btn" data-type="entrainement" role="radio"><span class="type-icon">🎓</span><span>ENTRAÎNEMENT</span></button>
+                            <button type="button" class="type-btn" data-type="dictee" role="radio"><span class="type-icon">🗣️</span><span>DICTÉE</span></button>
+                            <button type="button" class="type-btn" data-type="phrases" role="radio"><span class="type-icon">📝</span><span>PHRASES</span></button>
+                        </div>
+                        <p id="type-desc" class="type-desc"></p>
+                        <label id="theme-pick" class="theme-pick">THÈME DES MOTS
+                            <select id="theme-select" aria-label="Thème des mots"></select>
+                        </label>
+                        <div id="difficulty-block">
+                            <div class="module-label">2 · Difficulté</div>
+                            <div id="difficulty" class="difficulty" role="radiogroup" aria-label="Difficulté">
+                                <button type="button" class="diff-btn" data-diff="baby" role="radio">
+                                    <span class="diff-name">BABY</span>
+                                    <span class="diff-desc">mots courts, très lents, 5 vies</span>
+                                </button>
+                                <button type="button" class="diff-btn" data-diff="simple" role="radio">
+                                    <span class="diff-name">SIMPLE</span>
+                                    <span class="diff-desc">mots sans accents</span>
+                                </button>
+                                <button type="button" class="diff-btn" data-diff="avance" role="radio">
+                                    <span class="diff-name">AVANCÉ</span>
+                                    <span class="diff-desc">avec les accents é et è</span>
+                                </button>
+                            </div>
+                        </div>
+                    </section>
 
-                <!-- 🏆 Entrée dans le Top 3 : saisie du nom -->
-                <form id="name-entry" class="name-entry hidden" autocomplete="off">
-                    <div class="name-entry-title">🏆 TU ENTRES DANS LE TOP 3 !</div>
-                    <div class="name-entry-row">
-                        <input id="name-input" type="text" maxlength="10" placeholder="TON NOM" spellcheck="false" autocapitalize="characters" autocorrect="off" enterkeyhint="done" aria-label="Ton nom">
-                        <button type="submit" id="name-ok-btn" class="name-ok-btn">OK</button>
+                    <div class="menu-side">
+                        <!-- 🏆 MODULE : CLASSEMENT -->
+                        <section id="board-module" class="menu-module module-board">
+                            <h2 class="module-title gold"><span class="mt-icon">🏆</span>CLASSEMENT</h2>
+                            <!-- Entrée dans le Top 3 : saisie du nom -->
+                            <form id="name-entry" class="name-entry hidden" autocomplete="off">
+                                <div class="name-entry-title">🏆 TU ENTRES DANS LE TOP 3 !</div>
+                                <div class="name-entry-row">
+                                    <input id="name-input" type="text" maxlength="10" placeholder="TON NOM" spellcheck="false" autocapitalize="characters" autocorrect="off" enterkeyhint="done" aria-label="Ton nom">
+                                    <button type="submit" id="name-ok-btn" class="name-ok-btn">OK</button>
+                                </div>
+                            </form>
+                            <div id="leaderboard" class="leaderboard"></div>
+                            <!-- 🌍 Place au classement mondial (après l'envoi du score) -->
+                            <div id="online-rank" class="online-rank hidden"></div>
+                        </section>
+
+                        <!-- 📖 MODULE : RÈGLES -->
+                        <section id="rules-module" class="menu-module module-rules">
+                            <h2 class="module-title"><span class="mt-icon">📖</span>RÈGLES</h2>
+                            <div id="how-to" class="how-to">
+                                <div class="how-item"><span class="keycap">A</span><span class="keycap">Z</span> Tape les lettres pour tirer</div>
+                                <div class="how-item"><span class="dot red"></span> ⚡ Mots rouges : rapides, +20 pts</div>
+                                <div class="how-item"><span class="dot gold"></span> 💣 Mots dorés : bombe qui détruit tout</div>
+                                <div class="how-item"><span class="dot purple"></span> Sans erreur : combo jusqu'à x4</div>
+                                <div class="how-item">🛡️ Bouclier à 3 vies · 💣 doré = +1 vie</div>
+                                <div class="how-item">❄️ gel · ⏱️ ralenti · 👾 boss tous les 5 niveaux</div>
+                            </div>
+                        </section>
                     </div>
-                </form>
-
-                <!-- 🏆 Tableau des 3 meilleurs scores -->
-                <div id="leaderboard" class="leaderboard"></div>
-                <!-- 🌍 Place au classement mondial (après l'envoi du score) -->
-                <div id="online-rank" class="online-rank hidden"></div>
-
-                <!-- 👨‍🚀 Niveau de pilote, badges, série : ouvre l'écran BADGES & VAISSEAUX -->
-                <button id="pilot-btn" class="pilot-btn" type="button"></button>
+                </div>
 
                 <div class="menu-buttons">
                     <button id="restart-btn" class="primary-btn">COMMENCER</button>
@@ -190,13 +203,24 @@
             </div>
         </div>
 
-        <!-- 👨‍🚀 ÉCRAN BADGES & VAISSEAUX -->
+        <!-- 🎨 ÉCRAN VAISSEAUX & BADGES -->
         <div id="profile-screen" class="overlay hidden">
             <div class="menu-card profile-card">
                 <button id="profile-close" class="profile-close" type="button" aria-label="Fermer">✕</button>
                 <div class="menu-badge">◆ CARNET DE BORD ◆</div>
-                <h1>MON PROFIL</h1>
+                <h1>VAISSEAUX &amp; BADGES</h1>
                 <div id="profile-content"></div>
+                <button type="button" class="secondary-btn overlay-back" data-close="profile">↩ RETOUR AU MENU</button>
+            </div>
+        </div>
+
+        <!-- ☁️ ÉCRAN COMPTE (sauvegarde en ligne, optionnel) -->
+        <div id="account-screen" class="overlay hidden">
+            <div class="menu-card account-card">
+                <button id="account-close" class="profile-close" type="button" aria-label="Fermer">✕</button>
+                <div class="menu-badge">◆ SAUVEGARDE EN LIGNE ◆</div>
+                <h1>MON COMPTE</h1>
+                <div id="account-box" class="account-box"></div>
             </div>
         </div>
 
@@ -323,7 +347,7 @@
     <script>
         window.GAME_FILES = [
             'js/words.js', 'js/config.js', 'js/voice.js', 'js/audio.js', 'js/effects.js',
-            'js/leaderboard.js', 'js/menu.js', 'js/progress.js', 'js/game.js', 'js/input.js', 'js/pause.js',
+            'js/leaderboard.js', 'js/menu.js', 'js/progress.js', 'js/account.js', 'js/game.js', 'js/input.js', 'js/pause.js',
             'js/mobile.js', 'js/background.js'
         ];
         window.GAME_FILES.forEach(f => document.write('<script src="' + f + '?v=' + window.ASSET_V + '"><\/script>'));

@@ -84,7 +84,8 @@ function refreshModeUi() {
     // Défi du jour : tous les mots, mode simple → pas de choix de thème ni de difficulté
     // Phrases : pas de thème (ce sont des phrases)
     if (themePick) themePick.style.display = (gameType === 'defi' || gameType === 'phrases') ? 'none' : '';
-    if (difficultyBox) difficultyBox.style.display = gameType === 'defi' ? 'none' : '';
+    const diffBlock = document.getElementById('difficulty-block') || difficultyBox;
+    if (diffBlock) diffBlock.style.display = gameType === 'defi' ? 'none' : '';
     // Téléphone / tablette : pas d'AVANCÉ (pas d'accents sur le clavier à l'écran), mais BABY oui
     const avanceBtn = document.querySelector('.diff-btn[data-diff="avance"]');
     if (avanceBtn) avanceBtn.style.display = isTouchDevice ? 'none' : '';

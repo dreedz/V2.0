@@ -235,14 +235,7 @@ function renderLeaderboard() {
     const list = displayedList();
     leaderboardElement.innerHTML = '';
 
-    // Intitulé de section + sous-titre (mondial / appareil, difficulté)
-    const title = document.createElement('div');
-    title.className = 'section-title gold';
-    const titleText = document.createElement('span');
-    titleText.innerText = 'CLASSEMENT';
-    title.appendChild(titleText);
-    leaderboardElement.appendChild(title);
-
+    // (l'intitulé "CLASSEMENT" est dans le cadre du menu, index.html) → sous-titre : mondial / appareil, difficulté
     const kind = boardKind();
     const online = !!onlineTop[boardCacheKey()];
 
