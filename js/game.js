@@ -26,10 +26,14 @@ function startGame(mode) {
     if (isTouchDevice) gameMode = 'mobile'; // sécurité : jamais de mode sans clavier à l'écran sur tactile
     // Si le joueur relance sans valider son nom, on l'enregistre tel qu'il est écrit
     confirmName(false);
-    // Le mode mobile (clavier à l'écran) se joue toujours en SIMPLE
-    if (gameMode === 'mobile' && difficulty !== 'simple') setDifficulty('simple');
+    // Le mode mobile (clavier à l'écran) n'a pas les accents : AVANCÉ → SIMPLE (BABY reste possible)
+    if (gameMode === 'mobile' && difficulty === 'avance') setDifficulty('simple');
     startOnlineSession(); // 🎫 ticket de partie pour le classement en ligne (anti-triche)
     document.body.dataset.gameType = gameType;
+    closeProfile();
+    buildVirtualKeyboard(); // (barre ESPACE en mode phrases)
+    startRun();             // badges, fantôme du record
+    applySector(1);
     updateMenuButtons();
     applyLayout(gameMode === 'mobile');
 
@@ -58,8 +62,8 @@ function startGame(mode) {
     spawnTimer = 0;
     spawnCount = 0;
     tick = 0;
-    slowUntil = freezeUntil = doubleUntil = 0;
-    lives = MAX_LIVES;
+    slowUntil = freezeUntil = 0;
+    lives = maxLives();
     stats = { correct: 0, wrong: 0, errors: {}, ok: {} };
     updateLivesHud();
     updatePowerHud();
@@ -142,6 +146,10 @@ function triggerGameOver() {
     boardHighlight = entry;
     showRankText('');
 
+    // 🏅 Expérience, badges, série de jours, fantôme du record
+    const progress = finishRun(summary);
+    refreshModeUi(); // (la série du défi du jour a peut-être augmenté)
+
     if (screenTitle) screenTitle.innerText = "GAME OVER";
     const weak = summary.weak.length
         ? `<div class="weak-letters">🎯 À travailler : ${summary.weak.map(([l, n]) => `<span class="keycap">${l}</span> <small>×${n}</small>`).join(' ')}</div>`
@@ -154,7 +162,8 @@ function triggerGameOver() {
             <div class="stat"><div class="stat-label">MOTS/MIN</div><div class="stat-value">${summary.wpm}</div></div>
         </div>
         ${weak}
-        ${newRecord ? '<div class="new-record">★ NOUVEAU RECORD ★</div>' : ''}`;
+        ${newRecord ? '<div class="new-record">★ NOUVEAU RECORD ★</div>' : ''}
+        ${progressSummaryHtml(progress)}`;
     renderLeaderboard();
     showNameEntry(entry);
     if (restartBtn) restartBtn.innerText = "REJOUER";
@@ -169,6 +178,8 @@ function triggerBonusBomb(bonusWord) {
     createExplosion(gameW() / 2, gameH() / 2, '#eab308');
 
     const survivors = activeWords.filter(w => w.type === 'BOSS'); // 👾 le boss résiste à la bombe
+    const blasted = activeWords.filter(w => w !== bonusWord && w.type !== 'BOSS').length;
+    if (blasted >= 3) unlockBadge('bomb');
     activeWords.forEach(w => {
         if (w === bonusWord || w.type === 'BOSS') return; // le mot bonus est déjà compté par updateGame
         if (w.element) {
@@ -201,7 +212,6 @@ const WORD_TYPES = {
     BONUS:  { points: 30, color: '#fef08a', glow: '#eab308', icon: '💣', tag: 'BOMBE !',         boom: '#eab308' },
     SLOW:   { points: 15, color: '#67e8f9', glow: '#06b6d4', icon: '⏱️', tag: 'RALENTI !',       boom: '#06b6d4' },
     FREEZE: { points: 15, color: '#bfdbfe', glow: '#60a5fa', icon: '❄️', tag: 'GEL !',           boom: '#93c5fd' },
-    DOUBLE: { points: 15, color: '#86efac', glow: '#22c55e', icon: '🔫', tag: 'LASER DOUBLE !',  boom: '#22c55e' },
     BOSS:   { points: 50, color: '#f0abfc', glow: '#d946ef', icon: '👾', tag: 'BOSS VAINCU !',   boom: '#d946ef' }
 };
 const BOSS_EVERY = 5; // un boss tous les 5 niveaux
@@ -209,12 +219,25 @@ const BOSS_EVERY = 5; // un boss tous les 5 niveaux
 // Tire le type d'un mot (r entre 0 et 1)
 function pickWordType(r) {
     if (gameType === 'dictee') return r > 0.92 ? 'BONUS' : 'NORMAL'; // dictée : pas de mots rapides
-    if (r < 0.64) return 'NORMAL';
-    if (r < 0.67) return 'SLOW';
-    if (r < 0.70) return 'FREEZE';
-    if (r < 0.73) return 'DOUBLE';
-    if (r < 0.90) return 'RAPIDE';
+    if (r < 0.67) return 'NORMAL';
+    if (r < 0.70) return 'SLOW';
+    if (r < 0.73) return 'FREEZE';
+    if (r < 0.90) {
+        // Pas de mots rapides pour les tout-petits, ni en mode phrases
+        return (effectiveDifficulty() === 'baby' || gameType === 'phrases') ? 'NORMAL' : 'RAPIDE';
+    }
     return 'BONUS';
+}
+// Points d'un mot détruit (en mode phrases : selon la longueur de la phrase)
+function wordPoints(word) {
+    const base = (WORD_TYPES[word.type] || WORD_TYPES.NORMAL).points;
+    if (gameType === 'phrases' && word.type !== 'BOSS') return base + 2 * word.text.replace(/ /g, '').length;
+    return base;
+}
+// Longueur maximale des mots aux premiers niveaux
+function maxLengthForLevel(lvl) {
+    if (gameType === 'phrases') return [0, 12, 15, 18][lvl] || 99;
+    return [0, 4, 5, 6][lvl] || 99;
 }
 
 // 🎓 Entraînement : les mots qui contiennent les lettres souvent ratées sortent plus souvent
@@ -239,10 +262,7 @@ function spawnWord(forceType = null) {
         filteredList = dict.filter(word => word.length >= 9);
         if (filteredList.length < 5) filteredList = dict.slice().sort((a, b) => b.length - a.length).slice(0, 15);
     }
-    else if (level === 1) filteredList = dict.filter(word => word.length <= 4);
-    else if (level === 2) filteredList = dict.filter(word => word.length <= 5);
-    else if (level === 3) filteredList = dict.filter(word => word.length <= 6);
-    else filteredList = dict;
+    else filteredList = dict.filter(word => word.length <= maxLengthForLevel(level));
 
     if (filteredList.length === 0) filteredList = dict;
 
@@ -273,6 +293,11 @@ function spawnWord(forceType = null) {
         const extraColor = info.color ? `color: ${info.color};` : '';
         // Dictée : seule la 1re lettre est visible, les autres apparaissent quand on les tape
         const hidden = gameType === 'dictee' && i > 0;
+        // Phrases : l'espace est une "lettre" à taper, affichée comme une petite marque
+        if (text[i] === ' ') {
+            htmlContent += `<span class="letter space-letter" data-i="${i}" style="${extraColor}">·</span>`;
+            continue;
+        }
         htmlContent += `<span class="letter ${helperClass}" data-i="${i}"${hidden ? ' data-blank="1"' : ''} style="${extraColor}">${hidden ? '' : text[i]}</span>`;
     }
     if (wordType === 'BOSS') htmlContent += '<div class="boss-bar"><div class="boss-fill"></div></div>';
@@ -343,6 +368,7 @@ function updateGame() {
         }
     }
     if (tick % 10 === 0) updatePowerHud();
+    if (tick % 30 === 0) updateGhost(); // 👻 fantôme du record
 
     for (let i = lasers.length - 1; i >= 0; i--) {
         let l = lasers[i];
@@ -374,10 +400,15 @@ function updateGame() {
                         }
 
                         if (l.wordRef.validatedIndex === l.wordRef.text.length) {
-                            const pointsGagnes = info.points;
+                            const pointsGagnes = wordPoints(l.wordRef);
                             const c = l.wordRef.element ? getCenter(l.wordRef.element) : { x: gameW() / 2, y: gameH() / 2 };
                             if (l.wordRef.type === 'RAPIDE' || l.wordRef.type === 'BOSS') triggerScreenShake();
-                            if (l.wordRef.type === 'BOSS') { createExplosion(c.x, c.y, '#d946ef'); createExplosion(c.x, c.y, '#f0abfc'); }
+                            if (l.wordRef.type === 'BOSS') {
+                                createExplosion(c.x, c.y, '#d946ef'); createExplosion(c.x, c.y, '#f0abfc');
+                                run.bosses++;
+                                unlockBadge('boss');
+                            }
+                            if (l.wordRef.text.includes(' ')) run.phrases++;
                             if (l.wordRef.type === 'BONUS') triggerBonusBomb(l.wordRef);
                             activatePowerUp(l.wordRef.type, c);
 
@@ -410,6 +441,8 @@ function updateGame() {
                                 if (streakElement) streakElement.innerText = `0/${newSettings.wordsToNextLevel}`;
                                 const bossLevel = level % BOSS_EVERY === 0;
                                 showLevelBanner(level, bossLevel);
+                                applySector(level); // 🌌 nouveau décor tous les 5 niveaux
+                                checkLevelBadges();
                                 playLevelUpSound();
                                 playLevelVoice(level, 450);
                                 if (bossLevel) spawnWord('BOSS'); // 👾 un boss arrive !
@@ -440,7 +473,7 @@ const powerHudElement = document.getElementById('power-hud');
 function updateLivesHud() {
     if (livesElement) {
         livesElement.innerHTML = '';
-        for (let i = 0; i < MAX_LIVES; i++) {
+        for (let i = 0; i < maxLives(); i++) {
             const s = document.createElement('span');
             s.className = 'life' + (i < lives ? ' on' : '');
             livesElement.appendChild(s);
@@ -459,6 +492,7 @@ function shieldHit(w, shieldTop) {
     if (targetedWord === w) targetedWord = null;
 
     lives--;
+    run.livesLost++;
     updateLivesHud();
     triggerScreenShake();
     playErrorSound();
@@ -474,7 +508,7 @@ function shieldHit(w, shieldTop) {
     if (displayElement) { displayElement.innerText = 'x1'; displayElement.style.color = '#64748b'; }
 
     if (lives <= 0) { triggerGameOver(); return true; }
-    showFloatingText(c.x, shieldTop - 40, `🛡️ BOUCLIER ${lives}/${MAX_LIVES}`, 'shield-lost');
+    showFloatingText(c.x, shieldTop - 40, `🛡️ BOUCLIER ${lives}/${maxLives()}`, 'shield-lost');
     refreshTargetableHelpers();
     return false;
 }
@@ -483,8 +517,7 @@ function shieldHit(w, shieldTop) {
 function activatePowerUp(type, c) {
     if (type === 'SLOW')   { slowUntil = tick + 5 * 60;   playComboSound(2); }
     if (type === 'FREEZE') { freezeUntil = tick + 3 * 60; playComboSound(3); }
-    if (type === 'DOUBLE') { doubleUntil = tick + 8 * 60; playComboSound(4); }
-    if (type === 'BONUS' && lives < MAX_LIVES) {          // 💣 le mot doré répare le bouclier
+    if (type === 'BONUS' && lives < maxLives()) {          // 💣 le mot doré répare le bouclier
         lives++;
         updateLivesHud();
         showFloatingText(c.x, c.y - 50, '🛡️ +1', 'shield-repair');
@@ -497,7 +530,6 @@ function updatePowerHud() {
     const active = [];
     if (isFrozen()) active.push(['❄️', 'GEL', freezeUntil]);
     if (isSlowed()) active.push(['⏱️', 'RALENTI', slowUntil]);
-    if (isDoubleLaser()) active.push(['🔫', 'LASER x2', doubleUntil]);
     document.body.classList.toggle('pw-freeze', isFrozen());
     document.body.classList.toggle('pw-slow', isSlowed());
     if (!powerHudElement) return;

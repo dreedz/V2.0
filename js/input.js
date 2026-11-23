@@ -10,10 +10,11 @@
 window.addEventListener('keydown', (e) => {
     // (les accents ^ et ¨ sont des "touches mortes" : la lettre accentuée arrive à la touche suivante, ex. "ê")
     if (!isPlaying || isPaused || e.key.length !== 1) return;
-    // Espace : réécouter le mot (dictée). Jamais compté comme une erreur.
+    // Espace : une vraie lettre en mode phrases ; réécouter le mot en dictée ; ignorée sinon
     if (e.key === ' ') {
         e.preventDefault();
-        if (gameType === 'dictee') repeatDictation();
+        if (gameType === 'phrases') handleLetter(' ');
+        else if (gameType === 'dictee') repeatDictation();
         return;
     }
     let key = e.key.toUpperCase();
@@ -53,8 +54,7 @@ function revealLetter(letterElement, word, index) {
 
 // Traite une lettre tapée (clavier physique OU clavier virtuel).
 // Renvoie true si la lettre était correcte.
-// auto = true : tir automatique du laser double (ne compte ni dans les stats ni dans le combo)
-function handleLetter(keyPressed, auto = false) {
+function handleLetter(keyPressed) {
     if (!isPlaying || isPaused || !playerShip) return false;
     const shipRect = localRect(playerShip);
     const shipX = shipRect.left + shipRect.width / 2;
@@ -131,12 +131,6 @@ function handleLetter(keyPressed, auto = false) {
         }
     }
 
-    // 🔫 Laser double : la lettre suivante du mot part toute seule
-    if (auto) return toucheCorrecte;
-    if (toucheCorrecte && isDoubleLaser() && targetedWord) {
-        handleLetter(targetedWord.text[targetedWord.typedIndex], true);
-    }
-
     // 📊 Statistiques (précision, lettres ratées)
     if (toucheCorrecte) { stats.correct++; recordLetter(keyPressed, true); }
     else {
@@ -168,6 +162,7 @@ function handleLetter(keyPressed, auto = false) {
         if (scoreMultiplier > previousMultiplier) {
             showFloatingText(shipX, shipY - 90, `COMBO x${scoreMultiplier} !`, `combo-up combo-x${scoreMultiplier}`);
             playComboSound(scoreMultiplier);
+            if (scoreMultiplier === 4) unlockBadge('combo');
         }
     } else {
         // 💔 Combo cassé (seulement si on avait un vrai combo en cours)

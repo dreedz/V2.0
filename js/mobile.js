@@ -22,6 +22,15 @@ function buildVirtualKeyboard() {
             key.innerText = letter;
             rowEl.appendChild(key);
         }
+        // 📝 Mode phrases : une barre ESPACE au bout de la dernière rangée
+        if (row === KEYBOARD_ROWS[KEYBOARD_ROWS.length - 1] && gameType === 'phrases') {
+            const space = document.createElement('button');
+            space.className = 'vk-key vk-space';
+            space.type = 'button';
+            space.dataset.key = ' ';
+            space.innerText = 'ESPACE';
+            rowEl.appendChild(space);
+        }
         virtualKeyboard.appendChild(rowEl);
     });
 }

@@ -184,15 +184,43 @@ function currentChord() {
     return progression[Math.floor(musicStep / 16) % progression.length];
 }
 
+// 🌌 Intensité musicale selon le secteur (tous les 5 niveaux) : 0, 1, 2, 3...
+const musicSector = () => Math.min(sectorOf(level), 4);
+
 function getStepDuration() {
-    const bpm = 92 + Math.min(level - 1, 8) * 3;
+    const bpm = 92 + Math.min(level - 1, 8) * 3 + musicSector() * 5; // chaque secteur accélère un peu
     return 60 / bpm / 4; // une double-croche
 }
 
 function playMusicStep(step, t) {
-    const chord = progression[Math.floor(step / 16)];
+    const sector = musicSector();
+    // Chaque nouveau secteur change de tonalité (+2 demi-tons, +4...) : on sent qu'on est ailleurs
+    const shift = [0, 2, -3, 5, 1][sector];
+    const base = progression[Math.floor(step / 16)];
+    const chord = { pad: base.pad.map(n => n + shift), bass: base.bass + shift };
     const s = step % 16;
     const stepDur = getStepDuration();
+
+    // --- Couches en plus selon le secteur ---
+    // Secteur 2+ : basse qui pulse sur chaque croche
+    if (sector >= 1 && s % 2 === 1) {
+        tone({ freq: mtof(chord.bass + 12), type: 'square', t, attack: 0.005, dur: stepDur * 0.9,
+               vol: 0.035, filterFreq: 700, dest: musicBus });
+    }
+    // Secteur 3+ : mélodie aiguë qui répond à l'arpège
+    if (sector >= 2 && (s === 3 || s === 6 || s === 14)) {
+        const note = chord.pad[(s / 3 | 0) % 3] + 24;
+        tone({ freq: mtof(note), type: 'sine', t, attack: 0.01, dur: 0.35, vol: 0.045,
+               filterFreq: 4000, dest: musicBus, reverb: musicReverb, reverbAmount: 0.5 });
+    }
+    // Secteur 4+ : roulement de toms en fin de mesure
+    if (sector >= 3 && s >= 12 && s % 2 === 0) {
+        tone({ freq: 180 - (s - 12) * 25, endFreq: 70, type: 'sine', t, attack: 0.002, dur: 0.18, vol: 0.18, dest: musicBus });
+    }
+    // Secteur 5 : caisse claire sur les temps 2 et 4
+    if (sector >= 4 && (s === 4 || s === 12)) {
+        noise({ t, dur: 0.12, vol: 0.08, type: 'bandpass', from: 2500, to: 1500, dest: musicBus });
+    }
 
     // Nappe d'accord (début de chaque mesure)
     if (s === 0) {

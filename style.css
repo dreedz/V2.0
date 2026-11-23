@@ -124,7 +124,8 @@ body {
     z-index: 10;
     transform-origin: 50% 50%;
     transition: left 0.1s ease-out;
-    filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.8)) drop-shadow(0 0 14px rgba(34, 211, 238, 0.35));
+    /* halo lumineux + couleur du vaisseau choisi (le halo prend aussi la couleur) */
+    filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.8)) drop-shadow(0 0 14px rgba(34, 211, 238, 0.35)) var(--ship-filter, hue-rotate(0deg));
 }
 
 /* Flammes des réacteurs qui vacillent */
@@ -1413,7 +1414,6 @@ body.pw-slow #game-world::after { box-shadow: inset 0 0 100px rgba(6, 182, 212, 
 /* Textes flottants des nouveaux mots */
 .float-text.type-slow   { color: #a5f3fc; text-shadow: 0 0 12px #06b6d4, 0 0 2px #000; }
 .float-text.type-freeze { color: #dbeafe; text-shadow: 0 0 12px #60a5fa, 0 0 2px #000; }
-.float-text.type-double { color: #bbf7d0; text-shadow: 0 0 12px #22c55e, 0 0 2px #000; }
 .float-text.type-boss   { color: #f5d0fe; font-size: 34px; text-shadow: 0 0 18px #d946ef, 0 0 2px #000; }
 .float-text.shield-lost   { font-size: 16px; letter-spacing: 2px; color: #fda4af; text-shadow: 0 0 10px #e11d48, 0 0 2px #000; }
 .float-text.shield-repair { font-size: 22px; color: #a5f3fc; text-shadow: 0 0 12px var(--cyan), 0 0 2px #000; }
@@ -1602,3 +1602,260 @@ body.mobile-mode .repeat-icon { font-size: 20px; }
     box-sizing: border-box;
     opacity: 0.75;
 }
+
+/* ==========================================
+   🔤 POLICE ADAPTÉE À LA DYSLEXIE (bouton "Aa POLICE")
+   ========================================== */
+@font-face { font-family: 'OpenDyslexic'; src: url('fonts/OpenDyslexic-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'OpenDyslexic'; src: url('fonts/OpenDyslexic-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+body.dys-font { --font-words: 'OpenDyslexic', 'Comic Sans MS', sans-serif; }
+body.dys-font .word-container { font-family: 'OpenDyslexic', 'Comic Sans MS', sans-serif; letter-spacing: 3px; }
+body.dys-font .vk-key,
+body.dys-font #name-input,
+body.dys-font .how-item,
+body.dys-font .type-desc,
+body.dys-font .stats-summary { font-family: 'OpenDyslexic', 'Comic Sans MS', sans-serif; }
+
+/* ==========================================
+   🌌 SECTEURS : le décor change tous les 5 niveaux
+   ========================================== */
+#space-bg { transition: filter 2.5s ease; }
+#sector-tint {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0;
+    mix-blend-mode: screen;
+    transition: opacity 2.5s ease;
+}
+body[data-sector="1"] #space-bg { filter: saturate(0.45) brightness(1.15) hue-rotate(-15deg); }
+body[data-sector="1"] #sector-tint {             /* 🧊 planète glacée */
+    opacity: 1;
+    background:
+        radial-gradient(ellipse at 50% -10%, rgba(186, 230, 253, 0.28), transparent 60%),
+        linear-gradient(to top, rgba(224, 242, 254, 0.14), transparent 35%);
+}
+body[data-sector="2"] #space-bg { filter: hue-rotate(135deg) saturate(1.5); }
+body[data-sector="2"] #sector-tint {             /* 🔥 nébuleuse rouge */
+    opacity: 1;
+    background:
+        radial-gradient(ellipse at 25% 30%, rgba(239, 68, 68, 0.25), transparent 55%),
+        radial-gradient(ellipse at 80% 70%, rgba(249, 115, 22, 0.18), transparent 50%);
+}
+body[data-sector="3"] #space-bg { filter: hue-rotate(-95deg) saturate(1.25); }
+body[data-sector="3"] #sector-tint {             /* 🌌 aurores vertes */
+    opacity: 1;
+    background:
+        linear-gradient(170deg, rgba(34, 197, 94, 0.24), transparent 40%),
+        radial-gradient(ellipse at 70% 20%, rgba(20, 184, 166, 0.18), transparent 50%);
+}
+body[data-sector="4"] #space-bg { filter: hue-rotate(40deg) saturate(1.7) contrast(1.1); }
+body[data-sector="4"] #sector-tint {             /* 🌀 cœur de la galaxie */
+    opacity: 1;
+    background:
+        radial-gradient(circle at 50% 40%, rgba(250, 204, 21, 0.2), transparent 35%),
+        radial-gradient(ellipse at 50% 40%, rgba(168, 85, 247, 0.28), transparent 70%);
+}
+.banner-sector {
+    margin-top: 10px;
+    font-size: 0.3em;
+    letter-spacing: 4px;
+    color: #a5f3fc;
+    text-shadow: 0 0 14px var(--cyan);
+}
+
+/* 👻 Fantôme du record */
+.ghost {
+    margin-top: 5px;
+    font-family: var(--font-ui);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    min-height: 0;
+}
+.ghost:empty { display: none; }
+.ghost.ahead  { color: #86efac; text-shadow: 0 0 8px #22c55e; }
+.ghost.behind { color: #fda4af; text-shadow: 0 0 8px #e11d48; }
+
+/* 🍼 Trois difficultés (deux sur tactile, sans AVANCÉ) */
+#mode-section .difficulty { grid-template-columns: repeat(3, 1fr); max-width: 520px; }
+#mode-section .difficulty.two { grid-template-columns: repeat(2, 1fr); max-width: 400px; }
+.diff-btn.active[data-diff="baby"] {
+    color: #fbcfe8;
+    background: rgba(236, 72, 153, 0.12);
+    border-color: #f472b6;
+    box-shadow: 0 0 14px rgba(236, 72, 153, 0.4), inset 0 0 10px rgba(236, 72, 153, 0.12);
+}
+.diff-btn.active[data-diff="baby"] .diff-name { color: #f9a8d4; text-shadow: 0 0 10px #ec4899; }
+
+/* 📝 Cinq types de partie */
+.game-types { grid-template-columns: repeat(5, 1fr); }
+
+/* 📝 Phrases : l'espace à taper, et la barre ESPACE du clavier virtuel */
+.letter.space-letter { width: 0.7em; text-align: center; opacity: 0.45; }
+.vk-key.vk-space { flex: 0 0 calc((100% - 45px) / 10 * 3 + 10px); max-width: 200px; font-size: 12px; letter-spacing: 2px; }
+
+/* 👨‍🚀 Bouton pilote (menu) */
+.pilot-btn {
+    display: block;
+    width: 100%;
+    max-width: 460px;
+    margin: -6px auto 18px;
+    padding: 9px 12px;
+    font-family: var(--font-words);
+    font-size: 13px;
+    color: #e2e8f0;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px dashed rgba(34, 211, 238, 0.4);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+.pilot-btn:hover { background: rgba(34, 211, 238, 0.08); border-color: var(--cyan); }
+.pilot-btn b { color: var(--cyan); }
+.pb-more { display: block; margin-top: 3px; font-family: var(--font-ui); font-size: 9px; letter-spacing: 2px; color: var(--cyan); }
+
+/* 🏅 Annonce de badge pendant la partie */
+.badge-toast {
+    position: absolute;
+    top: 130px;
+    left: 50%;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 18px;
+    font-family: var(--font-ui);
+    font-size: 15px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    color: #fde047;
+    background: rgba(20, 16, 2, 0.85);
+    border: 1px solid rgba(234, 179, 8, 0.7);
+    border-radius: 14px;
+    box-shadow: 0 0 24px rgba(234, 179, 8, 0.45);
+    pointer-events: none;
+    white-space: nowrap;
+    animation: badge-toast 3.2s ease-out forwards;
+}
+.badge-toast small { font-size: 9px; letter-spacing: 3px; color: #fef08a; opacity: 0.8; }
+.bt-icon { font-size: 30px; }
+@keyframes badge-toast {
+    0%   { opacity: 0; transform: translate(-50%, -20px) scale(0.8); }
+    10%  { opacity: 1; transform: translate(-50%, 0) scale(1.05); }
+    15%  { transform: translate(-50%, 0) scale(1); }
+    85%  { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%, -10px); }
+}
+
+/* Fin de partie : XP, niveau, série, badges gagnés */
+.progress-summary { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 12px; }
+.progress-summary span {
+    padding: 4px 10px;
+    font-family: var(--font-ui);
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    border-radius: 20px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+}
+.pg-xp     { color: #a5f3fc; border-color: rgba(34, 211, 238, 0.5) !important; }
+.pg-level  { color: #fde047; border-color: rgba(234, 179, 8, 0.6) !important; }
+.pg-streak { color: #fdba74; border-color: rgba(249, 115, 22, 0.6) !important; }
+.pg-ghost  { color: #86efac; border-color: rgba(34, 197, 94, 0.6) !important; }
+.new-badges { margin-top: 10px; font-size: 13px; color: #fde047; }
+.new-badges .nb {
+    display: inline-block;
+    margin: 3px 4px;
+    padding: 3px 9px;
+    background: rgba(234, 179, 8, 0.1);
+    border: 1px solid rgba(234, 179, 8, 0.45);
+    border-radius: 8px;
+}
+
+/* 👨‍🚀 Écran profil */
+#profile-screen { z-index: 120; }
+.profile-card { max-width: 640px; }
+.profile-close {
+    position: absolute;
+    top: 12px; right: 14px;
+    width: 36px; height: 36px;
+    font-size: 18px;
+    color: var(--text-dim);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 50%;
+    cursor: pointer;
+}
+.profile-close:hover { color: #fff; border-color: var(--cyan); }
+.pf-level { margin-bottom: 20px; }
+.pf-title { font-family: var(--font-ui); font-size: 16px; font-weight: 900; letter-spacing: 3px; color: var(--cyan); margin-bottom: 8px; }
+.pf-sub { margin-top: 8px; font-size: 12px; color: #cbd5e1; }
+.pf-ships { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; margin-bottom: 20px; }
+.pf-ship {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 10px 6px 8px;
+    color: #e2e8f0;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 10px;
+    cursor: pointer;
+}
+.pf-ship:hover:not(.locked) { border-color: var(--cyan); }
+.pf-ship.active { border-color: var(--cyan); box-shadow: 0 0 14px rgba(34, 211, 238, 0.4); background: rgba(34, 211, 238, 0.08); }
+.pf-ship.locked { cursor: not-allowed; opacity: 0.45; }
+.pf-ship.locked .pf-ship-img { filter: grayscale(1) brightness(0.6) !important; }
+.pf-ship-img { width: 44px; height: 55px; display: block; }
+.pf-ship-img svg { width: 100%; height: 100%; }
+.pf-ship-name { font-family: var(--font-ui); font-size: 10px; font-weight: 700; letter-spacing: 1px; }
+.pf-ship-lock { font-size: 10px; color: var(--text-dim); }
+.pf-ship.active .pf-ship-lock { color: var(--cyan); }
+.pf-badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; text-align: left; }
+.pf-badge {
+    display: grid;
+    grid-template-columns: 34px 1fr;
+    grid-template-rows: auto auto;
+    column-gap: 8px;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 10px;
+    opacity: 0.55;
+}
+.pf-badge.got { opacity: 1; border-color: rgba(234, 179, 8, 0.55); background: rgba(234, 179, 8, 0.07); }
+.pf-badge-icon { grid-row: span 2; font-size: 26px; align-self: center; text-align: center; }
+.pf-badge-name { font-family: var(--font-ui); font-size: 10px; font-weight: 900; letter-spacing: 1px; color: #fde047; }
+.pf-badge:not(.got) .pf-badge-name { color: #cbd5e1; }
+.pf-badge-desc { font-size: 11px; color: var(--text-dim); line-height: 1.3; }
+
+/* 🌈 Vaisseau arc-en-ciel */
+.ship-rainbow { animation: ship-rainbow 3s linear infinite; }
+@keyframes ship-rainbow {
+    from { filter: hue-rotate(0deg) saturate(1.6); }
+    to   { filter: hue-rotate(360deg) saturate(1.6); }
+}
+
+@media (max-width: 720px) {
+    .game-types { grid-template-columns: repeat(3, 1fr); }
+    #mode-section .difficulty { grid-template-columns: repeat(3, 1fr); }
+    .diff-desc { font-size: 10px; }
+    .badge-toast { top: 80px; font-size: 13px; }
+    .pf-badges { grid-template-columns: 1fr 1fr; }
+    .ghost { font-size: 10px; margin-top: 3px; }
+}
+/* (OpenDyslexic est plus large : on réduit un peu la taille des mots) */
+body.dys-font .word-container { font-size: 24px; letter-spacing: 2px; }
+body.dys-font .word-container.boss { font-size: 28px; }
+/* Bouton "Aa POLICE" : désactivé = simplement atténué (pas barré, ce n'est pas un son coupé) */
+#font-btn.off { text-decoration: none; opacity: 0.7; }
+@media (max-width: 720px) { body.dys-font .word-container { font-size: 18px; } }
+
+/* 🌈 Vaisseau arc-en-ciel en jeu (halo compris) */
+#player-ship.ship-rainbow { animation: ship-rainbow-full 3s linear infinite; }
+@keyframes ship-rainbow-full {
+    from { filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.8)) drop-shadow(0 0 14px rgba(34, 211, 238, 0.35)) hue-rotate(0deg) saturate(1.6); }
+    to   { filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.8)) drop-shadow(0 0 14px rgba(34, 211, 238, 0.35)) hue-rotate(360deg) saturate(1.6); }
+}
+/* Aperçus du profil : un petit halo de la même couleur que le vaisseau */
+.pf-ship-img svg { filter: drop-shadow(0 0 4px rgba(56, 189, 248, 0.7)); }

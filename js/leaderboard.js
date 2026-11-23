@@ -7,7 +7,7 @@
 // 4 BIS. 🏆 TOP 3 DES MEILLEURS SCORES
 // ==========================================
 // Un classement par difficulté (le mode avancé est plus dur : ce ne serait pas équitable de mélanger)
-const leaderboardKey = () => (difficulty === 'avance' ? 'typing_shooter_top3_avance' : 'typing_shooter_top3');
+const leaderboardKey = () => (difficulty === 'simple' ? 'typing_shooter_top3' : 'typing_shooter_top3_' + difficulty);
 const LAST_NAME_KEY = 'typing_shooter_lastname';
 const LEADERBOARD_SIZE = 3;
 const leaderboardElement = document.getElementById('leaderboard');
@@ -32,7 +32,7 @@ function loadLeaderboard() {
         .filter(r => r && Number.isFinite(r.score) && r.score > 0)
         .map(r => ({ name: cleanName(r.name) || 'PILOTE', score: Math.floor(r.score), level: r.level || null }));
     // Ancienne version du jeu : un seul record sans nom → on le garde (dans le classement simple)
-    if (list.length === 0 && difficulty !== 'avance') {
+    if (list.length === 0 && difficulty === 'simple') {
         const old = parseInt(readStore('typing_shooter_highscore'), 10) || 0;
         if (old > 0) list.push({ name: 'PILOTE', score: old, level: null });
     }
@@ -42,7 +42,7 @@ function loadLeaderboard() {
 
 function storeLeaderboard() {
     writeStore(leaderboardKey(), JSON.stringify(leaderboard));
-    if (difficulty !== 'avance') writeStore('typing_shooter_highscore', leaderboard.length ? leaderboard[0].score : 0); // compatibilité
+    if (difficulty === 'simple') writeStore('typing_shooter_highscore', leaderboard.length ? leaderboard[0].score : 0); // compatibilité
     highScore = leaderboard.length ? leaderboard[0].score : 0;
     if (highScoreElement) highScoreElement.innerText = highScore;
 }
@@ -263,7 +263,7 @@ function renderLeaderboard() {
 
     const sub = document.createElement('div');
     sub.className = 'lb-title';
-    const diffName = difficulty === 'avance' ? 'AVANCÉ' : 'SIMPLE';
+    const diffName = DIFFICULTY_LABELS[difficulty] || 'SIMPLE';
     if (kind === 'none') {
         sub.innerText = `📘 ${GAME_TYPE_LABELS[gameType] || 'Ce mode'}${gameType === 'classique' ? ' · thème ' + THEME_LABELS[wordTheme] : ''} : hors classement (pour s'entraîner tranquillement)`;
         leaderboardElement.appendChild(sub);

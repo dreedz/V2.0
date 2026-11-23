@@ -58,15 +58,29 @@ let isCountingDown = false;
 let countdownTimer = null;
 
 // 🛡️ Bouclier : 3 vies. Un mot qui touche le bouclier en retire une ; un mot doré en répare une.
-const MAX_LIVES = 3;
-let lives = MAX_LIVES;
+// (Baby : 5 vies)
+const maxLives = () => (effectiveDifficulty() === 'baby' ? 5 : 3);
+let lives = 3;
+
+// 🌌 Secteurs : le décor et la musique changent tous les 5 niveaux
+const SECTORS = [
+    { name: 'CEINTURE D\'ASTÉROÏDES', icon: '☄️' },
+    { name: 'PLANÈTE GLACÉE', icon: '🧊' },
+    { name: 'NÉBULEUSE ROUGE', icon: '🔥' },
+    { name: 'AURORES VERTES', icon: '🌌' },
+    { name: 'CŒUR DE LA GALAXIE', icon: '🌀' }
+];
+const sectorOf = (lvl) => Math.floor((lvl - 1) / 5); // 0 pour les niveaux 1-5, 1 pour 6-10...
+const sectorInfo = (lvl) => SECTORS[sectorOf(lvl) % SECTORS.length];
+function applySector(lvl) {
+    document.body.dataset.sector = sectorOf(lvl) % SECTORS.length;
+}
 
 // ⏱️ Temps de jeu en images (60 par seconde, s'arrête pendant la pause) + bonus actifs jusqu'à telle image
 let tick = 0;
-let slowUntil = 0, freezeUntil = 0, doubleUntil = 0;
+let slowUntil = 0, freezeUntil = 0;
 const isFrozen = () => tick < freezeUntil;
 const isSlowed = () => tick < slowUntil;
-const isDoubleLaser = () => tick < doubleUntil;
 
 // 📊 Statistiques de la partie (précision, vitesse, lettres ratées)
 let stats = { correct: 0, wrong: 0, errors: {}, ok: {} };
@@ -230,7 +244,12 @@ function getCenter(element) {
 // Affiche la grosse bannière "NIVEAU X" au centre de l'écran
 function showLevelBanner(lvl, boss = false) {
     if (!levelBanner) return;
-    levelBanner.innerHTML = boss ? `NIVEAU ${lvl}<div class="banner-boss">⚠️ BOSS EN APPROCHE ⚠️</div>` : `NIVEAU ${lvl}`;
+    // Nouveau secteur (niveaux 6, 11, 16...) : on annonce le nouveau décor
+    const newSector = lvl > 1 && (lvl - 1) % 5 === 0;
+    const s = sectorInfo(lvl);
+    levelBanner.innerHTML = `NIVEAU ${lvl}`
+        + (boss ? '<div class="banner-boss">⚠️ BOSS EN APPROCHE ⚠️</div>' : '')
+        + (newSector ? `<div class="banner-sector">${s.icon} SECTEUR ${sectorOf(lvl) + 1} · ${s.name}</div>` : '');
     levelBanner.classList.remove('show');
     void levelBanner.offsetWidth; // relance l'animation
     levelBanner.classList.add('show');
@@ -248,8 +267,18 @@ function getDifficultySettings() {
         s.maxWordsOnScreen = Math.min(s.maxWordsOnScreen, 2);
         s.spawnDelay = Math.max(s.spawnDelay, 150);
         s.wordSpeed *= 0.6;
+    } else if (gameType === 'phrases') { // phrases : longues à taper, donc moins nombreuses et plus lentes
+        s.maxWordsOnScreen = Math.min(s.maxWordsOnScreen, 2);
+        s.spawnDelay = Math.max(s.spawnDelay, 170);
+        s.wordSpeed *= 0.5;
+        s.wordsToNextLevel = 3 + level;
     } else if (gameType === 'entrainement') {
         s.wordSpeed *= 0.85;
+    }
+    if (effectiveDifficulty() === 'baby') { // 🍼 Baby : beaucoup plus lent, moins de mots à la fois
+        s.maxWordsOnScreen = Math.min(s.maxWordsOnScreen, 3);
+        s.spawnDelay = Math.max(s.spawnDelay, 160);
+        s.wordSpeed *= 0.5;
     }
     return s;
 }

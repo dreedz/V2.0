@@ -175,24 +175,60 @@ const themeCache = {};
 function themeWords(theme, diff) {
     const key = theme + '|' + diff;
     if (!themeCache[key]) {
-        if (theme === 'tous' || !WORD_THEMES[theme]) themeCache[key] = diff === 'avance' ? wordListAdvanced : wordList;
-        else {
-            const simple = cleanSimple(WORD_THEMES[theme]);
-            themeCache[key] = diff === 'avance' ? toAdvanced(simple) : simple;
+        const simple = (theme === 'tous' || !WORD_THEMES[theme]) ? wordList : cleanSimple(WORD_THEMES[theme]);
+        if (diff === 'avance') themeCache[key] = theme === 'tous' ? wordListAdvanced : toAdvanced(simple);
+        else if (diff === 'baby') {
+            // 🍼 Baby : seulement des mots courts (5 lettres maximum, 6 si le thème en a trop peu)
+            const short = simple.filter(w => w.length <= 5);
+            themeCache[key] = short.length >= 25 ? short : simple.filter(w => w.length <= 6);
         }
+        else themeCache[key] = simple;
     }
     return themeCache[key];
 }
 
 // 🎚️ Difficulté choisie dans le menu : 'simple' (sans accents) ou 'avance' (avec accents)
 let difficulty = (() => {
-    try { return localStorage.getItem('typing_shooter_difficulty') === 'avance' ? 'avance' : 'simple'; }
+    try { const v = localStorage.getItem('typing_shooter_difficulty'); return ['baby', 'avance'].includes(v) ? v : 'simple'; }
     catch (e) { return 'simple'; }
 })();
 
-// 🎮 Type de partie : 'classique', 'defi' (défi du jour), 'entrainement', 'dictee'
-const GAME_TYPES = ['classique', 'defi', 'entrainement', 'dictee'];
-const GAME_TYPE_LABELS = { classique: 'Classique', defi: 'Défi du jour', entrainement: 'Entraînement', dictee: 'Dictée' };
+// 📝 Mode PHRASES : courtes phrases avec des espaces (aucun mot à accent, pour qu'elles soient justes partout)
+const PHRASES = [
+    "AU REVOIR", "ALLONS JOUER", "ATTENTION AU LASER", "AU LIT LES ROBOTS",
+    "BONJOUR PILOTE", "BRAVO CAPITAINE", "BON VOYAGE", "BONNE NUIT", "BIENVENUE PILOTE",
+    "CHAQUE JOUR COMPTE", "CAP SUR MARS", "CE ROBOT DANSE",
+    "DEUX CHATS JOUENT", "DES ROBOTS PARTOUT", "DORS BIEN", "DIX FOIS BRAVO",
+    "ELLE NAGE VITE", "EN AVANT TOUTE", "ENCORE UN TOUR", "ET HOP",
+    "FONCE VERS LA LUNE", "FAIS UN SOURIRE", "FERME LA PORTE",
+    "GARDE LE CAP", "GO GO GO", "GRAND BRAVO",
+    "HOP UN SAUT", "HAUT LES MAINS", "HUIT CHIENS COURENT",
+    "IL FAIT BEAU", "IL PLEUT ENCORE", "ICI LA BASE", "IL Y A UN OURS",
+    "JE TAPE VITE", "JE SUIS UN PILOTE", "JOUONS ENSEMBLE", "JUPITER EST LOIN",
+    "KIWI LE ROBOT", "KOALA DORT",
+    "LE CHAT DORT", "LA LUNE BRILLE", "LE ROBOT DANSE", "LA PLUIE TOMBE", "LE CIEL EST BLEU",
+    "LES OISEAUX CHANTENT", "LE LION RUGIT", "LA MER EST CALME",
+    "MON CHIEN JOUE", "MAMAN CHANTE", "MARS EST ROUGE", "MERCI BEAUCOUP", "MON AMI RIT",
+    "NOUS VOLONS HAUT", "NOUS GAGNONS", "NE BOUGE PAS", "NOIR COMME LA NUIT",
+    "ON JOUE DEHORS", "OUVRE LA PORTE", "OUI CAPITAINE", "ON Y VA",
+    "PAPA RIT", "PAUL LIT UN LIVRE", "PAS DE PANIQUE", "PRENDS TON TEMPS", "POUR LA VICTOIRE",
+    "QUEL BEAU CIEL", "QUEL GRAND ROBOT", "QUI VA GAGNER",
+    "ROBOT EN MISSION", "RESTE CALME", "RIEN NE VA PLUS", "RIONS ENSEMBLE",
+    "SALUT LES AMIS", "SUPER MISSION", "SAUTE PLUS HAUT", "SOIS PRUDENT",
+    "TOUT VA BIEN", "TOM COURT VITE", "TROIS DRAGONS VOLENT", "TAPE PLUS VITE", "TOM MANGE UNE POMME",
+    "UN CHIEN JOUE", "UN DRAGON VOLE", "UNE SOURIS GRISE", "UN DEUX TROIS",
+    "VITE AU VAISSEAU", "VOICI LA LUNE", "VIVE LES ROBOTS", "VOLE COMME UN OISEAU",
+    "WAGON DE ROBOTS",
+    "YOUPI ON GAGNE", "YOUPI LES VACANCES",
+    "ZUT ALORS", "ZOOM SUR LA LUNE"
+].filter(p => /^[A-Z ]+$/.test(p));
+
+// 🎮 Type de partie : 'classique', 'defi' (défi du jour), 'entrainement', 'dictee', 'phrases'
+const GAME_TYPES = ['classique', 'defi', 'entrainement', 'dictee', 'phrases'];
+const GAME_TYPE_LABELS = { classique: 'Classique', defi: 'Défi du jour', entrainement: 'Entraînement', dictee: 'Dictée', phrases: 'Phrases' };
+// Niveaux de difficulté : 'baby' (tout-petits), 'simple' (sans accents), 'avance' (é et è)
+const DIFFICULTIES = ['baby', 'simple', 'avance'];
+const DIFFICULTY_LABELS = { baby: 'BABY', simple: 'SIMPLE', avance: 'AVANCÉ' };
 let gameType = (() => {
     try { const v = localStorage.getItem('typing_shooter_mode'); return GAME_TYPES.includes(v) ? v : 'classique'; }
     catch (e) { return 'classique'; }
@@ -204,7 +240,7 @@ let wordTheme = (() => {
 
 // Le défi du jour se joue toujours avec tous les mots, en mode simple (pour que tout le monde ait les mêmes)
 const effectiveDifficulty = () => (gameType === 'defi' ? 'simple' : difficulty);
-const effectiveTheme = () => (gameType === 'defi' ? 'tous' : wordTheme);
+const effectiveTheme = () => (gameType === 'defi' || gameType === 'phrases' ? 'tous' : wordTheme);
 
 // ==========================================
 // 🗣️ MOTS DE LA DICTÉE
@@ -234,6 +270,10 @@ function isDictationWord(w) {
 }
 
 function currentWordList() {
+    if (gameType === 'phrases') {
+        // Baby : seulement les phrases courtes
+        return effectiveDifficulty() === 'baby' ? PHRASES.filter(p => p.length <= 13) : PHRASES;
+    }
     const list = themeWords(effectiveTheme(), effectiveDifficulty());
     if (gameType !== 'dictee') return list;
     const nouns = list.filter(isDictationWord);

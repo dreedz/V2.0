@@ -9,7 +9,7 @@
 const difficultyButtons = document.querySelectorAll('.diff-btn');
 
 function setDifficulty(diff) {
-    if (diff !== 'simple' && diff !== 'avance') return;
+    if (!DIFFICULTIES.includes(diff)) return;
     if (isPlaying) return; // on ne change pas en pleine partie
     if (diff !== difficulty) {
         confirmName(false); // un score en attente de nom va dans le classement de l'ancienne difficulté
@@ -45,14 +45,21 @@ const difficultyBox = document.getElementById('difficulty');
 
 function typeDescription() {
     switch (gameType) {
-        case 'defi':
-            return '🎯 Les mêmes mots pour tout le monde aujourd\'hui. Un nouveau défi chaque jour, avec son classement !';
+        case 'defi': {
+            const streak = typeof currentStreak === 'function' ? currentStreak() : 0;
+            return '🎯 Les mêmes mots pour tout le monde aujourd\'hui (en SIMPLE), avec son classement !'
+                + (streak ? ` 🔥 Série : ${streak} jour${streak > 1 ? 's' : ''}.` : ' Reviens chaque jour pour faire une série 🔥');
+        }
         case 'entrainement': {
             const weak = weakestLetters(4);
             return weak.length
                 ? `🎓 Les mots avec tes lettres difficiles reviennent plus souvent. À travailler : ${weak.join(', ')}`
                 : '🎓 Joue quelques parties : le jeu repèrera tes lettres difficiles et te les fera travailler.';
         }
+        case 'phrases':
+            return isTouchDevice
+                ? '📝 De courtes phrases à taper, avec la barre ESPACE entre les mots. Hors classement.'
+                : '📝 De courtes phrases à taper, avec la touche Espace entre les mots. Hors classement.';
         case 'dictee':
             return canSpeak
                 ? (isTouchDevice
@@ -75,9 +82,13 @@ function refreshModeUi() {
     });
     if (typeDesc) typeDesc.innerText = typeDescription();
     // Défi du jour : tous les mots, mode simple → pas de choix de thème ni de difficulté
-    if (themePick) themePick.style.display = gameType === 'defi' ? 'none' : '';
-    // Téléphone / tablette : toujours SIMPLE (pas d'accents sur le clavier à l'écran)
-    if (difficultyBox) difficultyBox.style.display = (isTouchDevice || gameType === 'defi') ? 'none' : '';
+    // Phrases : pas de thème (ce sont des phrases)
+    if (themePick) themePick.style.display = (gameType === 'defi' || gameType === 'phrases') ? 'none' : '';
+    if (difficultyBox) difficultyBox.style.display = gameType === 'defi' ? 'none' : '';
+    // Téléphone / tablette : pas d'AVANCÉ (pas d'accents sur le clavier à l'écran), mais BABY oui
+    const avanceBtn = document.querySelector('.diff-btn[data-diff="avance"]');
+    if (avanceBtn) avanceBtn.style.display = isTouchDevice ? 'none' : '';
+    if (difficultyBox) difficultyBox.classList.toggle('two', isTouchDevice);
     if (themeSelect) themeSelect.value = wordTheme;
 }
 
@@ -165,7 +176,29 @@ const DONATE_URL = 'https://paypal.me/wordshooter';
     if (gameOverScreen) gameOverScreen.classList.toggle('has-donate', ok && !!btn);
 })();
 
-// 📱 Sur téléphone / tablette : toujours le mode SIMPLE (pas d'accents à taper sur le clavier à l'écran)
-setDifficulty(isTouchDevice ? 'simple' : difficulty);
+// ==========================================
+// 🔤 POLICE ADAPTÉE À LA DYSLEXIE (option mémorisée)
+// ==========================================
+const fontBtn = document.getElementById('font-btn');
+let dysFont = readStore('typing_shooter_dys') === '1';
+function applyFont() {
+    document.body.classList.toggle('dys-font', dysFont);
+    if (fontBtn) {
+        fontBtn.classList.toggle('off', !dysFont);
+        fontBtn.title = dysFont ? 'Revenir à la police normale' : 'Police plus facile à lire (dyslexie)';
+    }
+}
+if (fontBtn) fontBtn.addEventListener('click', () => {
+    fontBtn.blur();
+    dysFont = !dysFont;
+    writeStore('typing_shooter_dys', dysFont ? '1' : '0');
+    applyFont();
+    // la taille des mots change : on met à jour leur hauteur (limite du bouclier)
+    activeWords.forEach(w => { if (w.element) w.height = w.element.offsetHeight; });
+});
+applyFont();
+
+// 📱 Sur téléphone / tablette : pas d'AVANCÉ (pas d'accents à taper sur le clavier à l'écran)
+setDifficulty(isTouchDevice && difficulty === 'avance' ? 'simple' : difficulty);
 refreshModeUi();
 renderLeaderboard();

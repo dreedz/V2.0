@@ -36,6 +36,8 @@
 
         <!-- 🌌 FOND SPATIAL ANIMÉ (étoiles, planètes, astéroïdes) -->
         <canvas id="space-bg"></canvas>
+        <!-- 🌌 Couleur du secteur (change tous les 5 niveaux) -->
+        <div id="sector-tint"></div>
 
         <!-- 📊 HUD : 3 panneaux (Score / Niveau / Combo) -->
         <div id="hud">
@@ -45,6 +47,8 @@
                 <div class="hud-sub">RECORD <span id="high-score">0</span></div>
                 <!-- 🛡️ Vies du bouclier -->
                 <div id="lives" class="lives" title="Bouclier : un mot qui le touche retire une vie"></div>
+                <!-- 👻 Fantôme : avance (+) ou retard (−) sur ton record au même moment -->
+                <div id="ghost" class="ghost"></div>
             </div>
 
             <div class="hud-center-wrap">
@@ -73,7 +77,7 @@
             </div>
         </div>
 
-        <!-- ⚡ Bonus actifs (gel, ralenti, laser double) -->
+        <!-- ⚡ Bonus actifs (gel, ralenti) -->
         <div id="power-hud" class="power-hud"></div>
 
         <!-- Bannière qui apparaît au passage de niveau -->
@@ -113,7 +117,7 @@
                     <div class="how-item"><span class="dot gold"></span> 💣 Mots dorés : bombe qui détruit tout</div>
                     <div class="how-item"><span class="dot purple"></span> Sans erreur : combo jusqu'à x4</div>
                     <div class="how-item">🛡️ Bouclier à 3 vies · 💣 doré = +1 vie</div>
-                    <div class="how-item">❄️ gel · ⏱️ ralenti · 🔫 laser double · 👾 boss tous les 5 niveaux</div>
+                    <div class="how-item">❄️ gel · ⏱️ ralenti · 👾 boss tous les 5 niveaux</div>
                 </div>
 
                 <!-- 🎚️ Choix de la difficulté -->
@@ -124,12 +128,17 @@
                     <button type="button" class="type-btn" data-type="defi" role="radio"><span class="type-icon">🎯</span><span>DÉFI DU JOUR</span></button>
                     <button type="button" class="type-btn" data-type="entrainement" role="radio"><span class="type-icon">🎓</span><span>ENTRAÎNEMENT</span></button>
                     <button type="button" class="type-btn" data-type="dictee" role="radio"><span class="type-icon">🗣️</span><span>DICTÉE</span></button>
+                    <button type="button" class="type-btn" data-type="phrases" role="radio"><span class="type-icon">📝</span><span>PHRASES</span></button>
                 </div>
                 <p id="type-desc" class="type-desc"></p>
                 <label id="theme-pick" class="theme-pick">THÈME DES MOTS
                     <select id="theme-select" aria-label="Thème des mots"></select>
                 </label>
                 <div id="difficulty" class="difficulty" role="radiogroup" aria-label="Difficulté">
+                    <button type="button" class="diff-btn" data-diff="baby" role="radio">
+                        <span class="diff-name">BABY</span>
+                        <span class="diff-desc">mots courts, très lents, 5 vies</span>
+                    </button>
                     <button type="button" class="diff-btn" data-diff="simple" role="radio">
                         <span class="diff-name">SIMPLE</span>
                         <span class="diff-desc">mots sans accents</span>
@@ -155,6 +164,9 @@
                 <!-- 🌍 Place au classement mondial (après l'envoi du score) -->
                 <div id="online-rank" class="online-rank hidden"></div>
 
+                <!-- 👨‍🚀 Niveau de pilote, badges, série : ouvre l'écran BADGES & VAISSEAUX -->
+                <button id="pilot-btn" class="pilot-btn" type="button"></button>
+
                 <div class="menu-buttons">
                     <button id="restart-btn" class="primary-btn">COMMENCER</button>
                     <button id="share-btn" class="secondary-btn share-btn" type="button">📤 PARTAGER</button>
@@ -175,6 +187,16 @@
                 <a id="donate-btn" class="donate-btn" href="#" target="_blank" rel="noopener noreferrer">
                     FAIRE UN DON <span class="donate-pp">via PayPal</span>
                 </a>
+            </div>
+        </div>
+
+        <!-- 👨‍🚀 ÉCRAN BADGES & VAISSEAUX -->
+        <div id="profile-screen" class="overlay hidden">
+            <div class="menu-card profile-card">
+                <button id="profile-close" class="profile-close" type="button" aria-label="Fermer">✕</button>
+                <div class="menu-badge">◆ CARNET DE BORD ◆</div>
+                <h1>MON PROFIL</h1>
+                <div id="profile-content"></div>
             </div>
         </div>
 
@@ -258,6 +280,7 @@
             </button>
             <button id="music-btn" class="sound-btn" title="Couper / remettre la musique">♪ MUSIQUE</button>
             <button id="sfx-btn" class="sound-btn" title="Couper / remettre les effets sonores">✦ EFFETS</button>
+            <button id="font-btn" class="sound-btn" title="Police plus facile à lire (dyslexie)">Aa POLICE</button>
         </div>
 
         <!-- 🔊 DICTÉE : RÉPÉTER LE MOT (touche Espace sur PC) -->
@@ -300,7 +323,7 @@
     <script>
         window.GAME_FILES = [
             'js/words.js', 'js/config.js', 'js/voice.js', 'js/audio.js', 'js/effects.js',
-            'js/leaderboard.js', 'js/menu.js', 'js/game.js', 'js/input.js', 'js/pause.js',
+            'js/leaderboard.js', 'js/menu.js', 'js/progress.js', 'js/game.js', 'js/input.js', 'js/pause.js',
             'js/mobile.js', 'js/background.js'
         ];
         window.GAME_FILES.forEach(f => document.write('<script src="' + f + '?v=' + window.ASSET_V + '"><\/script>'));
