@@ -10,7 +10,7 @@ const CACHE = 'alpha-strike-v3';
 const CORE_FILES = [
     './', 'index.html', 'style.css', 'manifest.webmanifest',
     'js/words.js', 'js/config.js', 'js/voice.js', 'js/audio.js', 'js/effects.js',
-    'js/leaderboard.js', 'js/menu.js', 'js/progress.js', 'js/account.js', 'js/game.js', 'js/input.js', 'js/pause.js',
+    'js/leaderboard.js', 'js/menu.js', 'js/ships.js', 'js/progress.js', 'js/account.js', 'js/game.js', 'js/input.js', 'js/pause.js',
     'js/mobile.js', 'js/background.js',
     'icons/icon-192.png', 'icons/icon-512.png',
     'fonts/OpenDyslexic-Regular.woff2', 'fonts/OpenDyslexic-Bold.woff2'

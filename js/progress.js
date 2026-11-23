@@ -26,17 +26,6 @@ const BADGES = [
     { id: 'streak7',   icon: '🗓️', name: 'Une semaine entière', desc: 'Faire le défi du jour 7 jours de suite' }
 ];
 
-// 🚀 Vaisseaux débloqués avec le niveau de pilote (couleurs appliquées au dessin du vaisseau)
-const SHIPS = [
-    { id: 'cyan',    name: 'Faucon bleu',     level: 1,  filter: 'none' },
-    { id: 'vert',    name: 'Comète verte',    level: 2,  filter: 'hue-rotate(-70deg) saturate(1.3)' },
-    { id: 'rubis',   name: 'Fusée rubis',     level: 3,  filter: 'hue-rotate(160deg) saturate(1.6)' },
-    { id: 'violet',  name: 'Ombre violette',  level: 5,  filter: 'hue-rotate(75deg) saturate(1.4)' },
-    { id: 'or',      name: 'Étoile d\'or',    level: 8,  filter: 'hue-rotate(-150deg) saturate(2) brightness(1.15)' },
-    { id: 'rose',    name: 'Néon rose',       level: 12, filter: 'hue-rotate(125deg) saturate(1.8) brightness(1.1)' },
-    { id: 'rainbow', name: 'Arc-en-ciel',     level: 20, filter: 'rainbow' }
-];
-
 // --- Lecture / écriture de la progression ---
 // Remet une progression (de l'appareil ou du compte en ligne) dans le bon format
 function normalizeProgress(p) {
@@ -223,30 +212,21 @@ function progressSummaryHtml(p) {
 }
 
 // --- Vaisseau choisi ---
-// (la couleur s'applique à tout le vaisseau, halo lumineux compris)
+// (chaque vaisseau a son propre dessin, voir ships.js ; le halo lumineux prend sa couleur)
+const currentShip = () => SHIPS.find(s => s.id === progress.ship && s.level <= pilotLevel()) || SHIPS[0];
 function applyShip() {
     if (!playerShip) return;
-    const ship = SHIPS.find(s => s.id === progress.ship && s.level <= pilotLevel()) || SHIPS[0];
-    const rainbow = ship.filter === 'rainbow';
-    playerShip.classList.toggle('ship-rainbow', rainbow);
-    if (rainbow || ship.filter === 'none') playerShip.style.removeProperty('--ship-filter');
-    else playerShip.style.setProperty('--ship-filter', ship.filter);
+    const ship = currentShip();
+    if (playerShip.dataset.ship !== ship.id) {
+        playerShip.innerHTML = shipSvg(ship.id, 'live');
+        playerShip.dataset.ship = ship.id;
+    }
+    playerShip.style.setProperty('--ship-glow', ship.glow);
+    playerShip.classList.toggle('ship-cruiser', ship.id === 'rainbow');
 }
 
-// Copie "propre" du dessin du vaisseau pour les aperçus du profil :
-// sans la couleur du vaisseau choisi, et avec des identifiants uniques
-// (sinon les dégradés de couleur de chaque aperçu se mélangent)
-function shipPreviewSvg(suffix) {
-    const svg = playerShip ? playerShip.querySelector('svg') : null;
-    if (!svg) return '';
-    const clone = svg.cloneNode(true);
-    clone.removeAttribute('style');
-    clone.removeAttribute('class');
-    clone.removeAttribute('id');
-    let html = clone.outerHTML;
-    html = html.replace(/id="([^"]+)"/g, `id="$1-${suffix}"`).replace(/url\(#([^)]+)\)/g, `url(#$1-${suffix})`);
-    return html;
-}
+// Style du halo d'un aperçu (même couleur que le vaisseau)
+const shipGlowStyle = (s) => `--ship-glow:${s.glow}`;
 
 // ==========================================
 // 👨‍🚀 ÉCRAN "PROFIL" (badges, vaisseaux, série)
@@ -255,8 +235,6 @@ const pilotCard = document.getElementById('pilot-card');
 const profileScreen = document.getElementById('profile-screen');
 const profileContent = document.getElementById('profile-content');
 
-// Vaisseau choisi (en tenant compte du niveau)
-const currentShip = () => SHIPS.find(s => s.id === progress.ship && s.level <= pilotLevel()) || SHIPS[0];
 
 // 👨‍🚀 Carte du pilote (menu) : qui joue, niveau, badges, et accès au compte
 function refreshPilotSummary() {
@@ -269,10 +247,9 @@ function refreshPilotSummary() {
     const acc = typeof account !== 'undefined' && account ? cleanName(account.name) : '';
     const online = typeof onlineEnabled === 'function' && onlineEnabled();
     const ship = currentShip();
-    const shipStyle = ship.filter !== 'rainbow' && ship.filter !== 'none' ? `filter:${ship.filter}` : '';
     const cloud = typeof cloudState !== 'undefined' ? cloudState : '';
     pilotCard.innerHTML = `
-        <div class="pc-ship${ship.filter === 'rainbow' ? ' ship-rainbow' : ''}" style="${shipStyle}">${shipPreviewSvg('pc')}</div>
+        <div class="pc-ship" style="${shipGlowStyle(ship)}" title="${ship.name}">${shipSvg(ship.id, 'pc')}</div>
         <div class="pc-info">
             <div class="pc-name">${acc || 'PILOTE INVITÉ'}
                 ${online ? (acc
@@ -321,8 +298,9 @@ function renderProfile() {
         const unlocked = s.level <= lvl;
         const active = progress.ship === s.id;
         html += `<button type="button" class="pf-ship${unlocked ? '' : ' locked'}${active ? ' active' : ''}" data-ship="${s.id}" ${unlocked ? '' : 'disabled'}>
-            <span class="pf-ship-img${s.filter === 'rainbow' ? ' ship-rainbow' : ''}" style="${s.filter !== 'rainbow' && s.filter !== 'none' ? 'filter:' + s.filter : ''}">${shipPreviewSvg('pf-' + s.id)}</span>
+            <span class="pf-ship-img" style="${shipGlowStyle(s)}">${shipSvg(s.id, 'pf-' + s.id)}</span>
             <span class="pf-ship-name">${s.name}</span>
+            <span class="pf-ship-desc">${s.desc}</span>
             <span class="pf-ship-lock">${unlocked ? (active ? '✔ CHOISI' : 'CHOISIR') : '🔒 niveau ' + s.level}</span>
         </button>`;
     });

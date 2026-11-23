@@ -124,8 +124,8 @@ body {
     z-index: 10;
     transform-origin: 50% 50%;
     transition: left 0.1s ease-out;
-    /* halo lumineux + couleur du vaisseau choisi (le halo prend aussi la couleur) */
-    filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.8)) drop-shadow(0 0 14px rgba(34, 211, 238, 0.35)) var(--ship-filter, hue-rotate(0deg));
+    /* halo lumineux de la couleur du vaisseau choisi (--ship-glow, voir ships.js) */
+    filter: drop-shadow(0 0 6px rgba(var(--ship-glow, 56, 189, 248), 0.8)) drop-shadow(0 0 14px rgba(var(--ship-glow, 56, 189, 248), 0.35));
 }
 
 /* Flammes des réacteurs qui vacillent */
@@ -1783,7 +1783,7 @@ body[data-sector="4"] #sector-tint {             /* 🌀 cœur de la galaxie */
 .pf-ship.active { border-color: var(--cyan); box-shadow: 0 0 14px rgba(34, 211, 238, 0.4); background: rgba(34, 211, 238, 0.08); }
 .pf-ship.locked { cursor: not-allowed; opacity: 0.45; }
 .pf-ship.locked .pf-ship-img { filter: grayscale(1) brightness(0.6) !important; }
-.pf-ship-img { width: 44px; height: 55px; display: block; }
+.pf-ship-img { width: 52px; height: 65px; display: block; }
 .pf-ship-img svg { width: 100%; height: 100%; }
 .pf-ship-name { font-family: var(--font-ui); font-size: 10px; font-weight: 700; letter-spacing: 1px; }
 .pf-ship-lock { font-size: 10px; color: var(--text-dim); }
@@ -1806,13 +1806,6 @@ body[data-sector="4"] #sector-tint {             /* 🌀 cœur de la galaxie */
 .pf-badge:not(.got) .pf-badge-name { color: #cbd5e1; }
 .pf-badge-desc { font-size: 11px; color: var(--text-dim); line-height: 1.3; }
 
-/* 🌈 Vaisseau arc-en-ciel */
-.ship-rainbow { animation: ship-rainbow 3s linear infinite; }
-@keyframes ship-rainbow {
-    from { filter: hue-rotate(0deg) saturate(1.6); }
-    to   { filter: hue-rotate(360deg) saturate(1.6); }
-}
-
 @media (max-width: 720px) {
     .game-types { grid-template-columns: repeat(3, 1fr); }
     #mode-section .difficulty { grid-template-columns: repeat(3, 1fr); }
@@ -1828,14 +1821,23 @@ body.dys-font .word-container.boss { font-size: 28px; }
 #font-btn.off { text-decoration: none; opacity: 0.7; }
 @media (max-width: 720px) { body.dys-font .word-container { font-size: 18px; } }
 
-/* 🌈 Vaisseau arc-en-ciel en jeu (halo compris) */
-#player-ship.ship-rainbow { animation: ship-rainbow-full 3s linear infinite; }
-@keyframes ship-rainbow-full {
-    from { filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.8)) drop-shadow(0 0 14px rgba(34, 211, 238, 0.35)) hue-rotate(0deg) saturate(1.6); }
-    to   { filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.8)) drop-shadow(0 0 14px rgba(34, 211, 238, 0.35)) hue-rotate(360deg) saturate(1.6); }
+/* 🚀 Aperçus des vaisseaux (profil, carte pilote) : halo de la couleur du vaisseau + flammes animées */
+.pf-ship-img svg, .pc-ship svg { filter: drop-shadow(0 0 4px rgba(var(--ship-glow, 56, 189, 248), 0.75)); }
+.pf-ship:not(.locked) .flame, .pc-ship .flame {
+    transform-box: fill-box;
+    transform-origin: 50% 0%;
+    animation: flicker 0.09s infinite alternate ease-in-out;
 }
-/* Aperçus du profil : un petit halo de la même couleur que le vaisseau */
-.pf-ship-img svg { filter: drop-shadow(0 0 4px rgba(56, 189, 248, 0.7)); }
+.pf-ship:not(.locked) .flame-2, .pc-ship .flame-2 { animation-delay: 0.045s; }
+.pf-ship-desc { font-size: 10px; line-height: 1.25; color: #94a3b8; min-height: 2.5em; }
+.pf-ship.locked .pf-ship-desc { visibility: hidden; }
+/* 🌌 Star Cruiser : plus grand, halo qui pulse */
+#player-ship.ship-cruiser { width: 84px; height: 105px; animation: cruiser-glow 2.4s ease-in-out infinite; }
+@keyframes cruiser-glow {
+    0%, 100% { filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.85)) drop-shadow(0 0 16px rgba(34, 211, 238, 0.4)); }
+    50%      { filter: drop-shadow(0 0 9px rgba(34, 211, 238, 0.9)) drop-shadow(0 0 22px rgba(244, 114, 182, 0.45)); }
+}
+@media (max-width: 720px) { #player-ship.ship-cruiser { width: 60px; height: 75px; } }
 
 /* ==========================================
    🧩 MENU EN MODULES : carte pilote · MODE DE JEU · CLASSEMENT · RÈGLES
@@ -1932,7 +1934,7 @@ body.dys-font .word-container.boss { font-size: 28px; }
     border-radius: 14px;
 }
 .pc-ship { flex-shrink: 0; width: 44px; height: 55px; }
-.pc-ship svg { width: 100%; height: 100%; filter: drop-shadow(0 0 5px rgba(56, 189, 248, 0.7)); }
+.pc-ship svg { width: 100%; height: 100%; }
 .pc-info { flex: 1; min-width: 0; }
 .pc-name {
     display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px;
